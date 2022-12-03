@@ -1,6 +1,6 @@
 # Ignore all venv files
 .venv/
 # Ignore all archive files
-.data_archive/
+data_archive/
 # Ignore all vscode files
 .vscode/
