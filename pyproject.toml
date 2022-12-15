@@ -21,6 +21,8 @@ tqdm = "^4.64.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.17.0"
+flake8 = "^6.0.0"
+autopep8 = "^2.0.0"
 
 [build-system]
 requires = ["poetry-core"]
