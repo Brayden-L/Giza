@@ -17,6 +17,7 @@ beautifulsoup4 = "^4.11.1"
 nltk = "^3.7"
 nbformat = "^5.7.0"
 tqdm = "^4.64.1"
+lxml = "^4.9.2"
 
 
 [tool.poetry.group.dev.dependencies]
