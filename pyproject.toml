@@ -18,6 +18,9 @@ nltk = "^3.7"
 nbformat = "^5.7.0"
 tqdm = "^4.64.1"
 lxml = "^4.9.2"
+Scrapy = "^2.7.1"
+cchardet = "^2.1.7"
+grequests = "^0.6.0"
 
 
 [tool.poetry.group.dev.dependencies]
