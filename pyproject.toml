@@ -21,6 +21,8 @@ lxml = "^4.9.2"
 Scrapy = "^2.7.1"
 cchardet = "^2.1.7"
 grequests = "^0.6.0"
+pandarallel = "^1.6.3"
+ipywidgets = "^8.0.4"
 
 
 [tool.poetry.group.dev.dependencies]
