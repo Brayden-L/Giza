@@ -4,3 +4,5 @@
 data_archive/
 # Ignore all vscode files
 .vscode/
+# Ignore pycache
+__pycache__/
