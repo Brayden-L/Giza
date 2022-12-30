@@ -1,5 +1,9 @@
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
+import streamlit_nested_layout
+from unique_route_handling import *
+import json
+import os
 
 page_bg_img = f"""
 <style>
@@ -17,6 +21,21 @@ background: rgba(0,0,0,0);
 
 st.set_page_config(layout="centered", page_title="Main Page")
 st.markdown(page_bg_img, unsafe_allow_html=True)
+
+if 'scrape_button_state' not in st.session_state:
+    st.session_state.scrape_button_state = True
+if 'dl_button_state' not in st.session_state:
+    st.session_state.dl_button_state = True
+if 'df_usend_uniq' not in st.session_state:
+    st.session_state.df_usend_uniq = pd.DataFrame()
+if 'df_usend_uniq_ticks' not in st.session_state:
+    st.session_state.df_usend_uniq_ticks = pd.DataFrame()
+if 'df_usend_uniq_todos' not in st.session_state:
+    st.session_state.df_usend_uniq_todos = pd.DataFrame()
+if 'list_type' not in st.session_state:
+    st.session_state.list_type = "Ticks"
+if 'df_ticks_fil' not in st.session_state:
+    st.session_state.df_ticks_fil = pd.DataFrame()
 
 st.title("Giza")
 st.header("Extended Rock Climbing Analytics")

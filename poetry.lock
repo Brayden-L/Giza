@@ -1505,6 +1505,17 @@ python-decouple = ">=3.6,<4.0"
 streamlit = ">=0.87.0"
 
 [[package]]
+name = "streamlit-lottie"
+version = "0.0.3"
+description = "A Streamlit custom component to load Lottie animations"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "streamlit-nested-layout"
 version = "0.1.1"
 description = "Enables nested layout in streamlit."
@@ -1784,7 +1795,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "e447f9f6fc18e2d298ff2a0d7cf611e775e10eab212d72492f2f47d4efc06e57"
+content-hash = "abfcef83fdcbde982b7c7d30c3c1e2967e1c1fe70d9996c77e8913a7acd1cf98"
 
 [metadata.files]
 altair = [
@@ -3164,6 +3175,10 @@ streamlit = [
 streamlit-aggrid = [
     {file = "streamlit-aggrid-0.3.3.tar.gz", hash = "sha256:d96edb102df98450f3b6bcf5a52b64e6ceef9678e82e2dba9cfef074e7f134ab"},
     {file = "streamlit_aggrid-0.3.3-py3-none-any.whl", hash = "sha256:c5202347b1257c4246ef3541b233866f57bc930b97040be58b059093c4fee22e"},
+]
+streamlit-lottie = [
+    {file = "streamlit-lottie-0.0.3.tar.gz", hash = "sha256:c1b65e2b56c51db7f911c727b16e8f1e27591594294f0ac06333978984cade83"},
+    {file = "streamlit_lottie-0.0.3-py3-none-any.whl", hash = "sha256:b6ab8171d4423cdd14630dcae237fc339b998264dd57ff8810705e01d03f5c33"},
 ]
 streamlit-nested-layout = [
     {file = "streamlit-nested-layout-0.1.1.tar.gz", hash = "sha256:8b7ce4d90b76ff8f4fff2cf7b30ae262cd2c068722e5439a3618f9a412ed82fb"},

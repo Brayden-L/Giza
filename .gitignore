@@ -6,3 +6,5 @@ data_archive/
 .vscode/
 # Ignore pycache
 __pycache__/
+# Ignore Media Files
+Media/
