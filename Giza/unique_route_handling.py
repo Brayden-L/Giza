@@ -10,7 +10,7 @@ import plotly.figure_factory as ff
 import nltk
 
 # Scraping Related
-import grequests # You will get errors if grequests is not above requests
+# import grequests # You will get errors if grequests is not above requests
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from pandarallel import pandarallel
@@ -24,13 +24,14 @@ import pyinputplus as pyip
 import datetime as dt
 from datetime import datetime
 from tqdm import tqdm
+from stqdm import stqdm
 import pickle
 import random
 import math 
 import string
 
 # Initializations
-tqdm.pandas()
+stqdm.pandas()
 pandarallel.initialize(progress_bar=True)
 
 # Warning Supression
@@ -135,12 +136,14 @@ def download_routelist(upload_type, link):
     except Exception as err:
         df = False
         print(err)
-        if err.code == 401:
+        if 'https://www.mountainproject.com/user/' not in link:
+            error_text = """Link must be of form "https://www.mountainproject.com/user/" """
+        elif err.code == 401:
             error_text = "Unauthenticated (Error: 401)"
         elif err.code == 403:
             error_text = "Unauthorized (Error: 403)"
         elif err.code == 404:
-            error_text = "Incorrect Link (Error: 404)"
+            error_text = "Invalid Link (Error: 404)"
         elif err.code in range(500, 511) :
             error_text = "Server Error Please Try Again"
         else:
@@ -316,12 +319,12 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
     else:
         if r_direction == 'up':
             grademoderate()
-            grade_change_subset = rating_isolate.isin(list(rgradedownmap.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(rgradedownmap)
-        if r_direction == 'down':
-            grademoderate()
             grade_change_subset = rating_isolate.isin(list(rgradeupmap.keys()))
             df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(rgradeupmap)
+        if r_direction == 'down':
+            grademoderate()
+            grade_change_subset = rating_isolate.isin(list(rgradedownmap.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(rgradedownmap)
         if r_direction == 'even_rand':
             grademoderate()
             grade_split(rgradeupmap,rgradedownmap)
@@ -338,11 +341,11 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
         df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeconmap1)
 
         if b_direction == 'up':
-            grade_change_subset = rating_isolate.isin(list(bgradedownmap1.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap1)
-        if b_direction == 'down':
             grade_change_subset = rating_isolate.isin(list(bgradeupmap1.keys()))
             df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmap1)
+        if b_direction == 'down':
+            grade_change_subset = rating_isolate.isin(list(bgradedownmap1.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap1)
         if b_direction == 'even_rand':
             grade_split(bgradeupmap1,bgradedownmap1)
         if b_direction == 'manual':
@@ -353,11 +356,11 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
 
     if b_type =='sign':
         if b_direction == 'up':
-            grade_change_subset = rating_isolate.isin(list(bgradedownmap2.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap2)
-        if b_direction == 'down':
             grade_change_subset = rating_isolate.isin(list(bgradeupmap2.keys()))
             df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmap2)
+        if b_direction == 'down':
+            grade_change_subset = rating_isolate.isin(list(bgradedownmap2.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap2)
         if b_direction == 'even_rand':
             grade_split(bgradeupmap2,bgradedownmap2)
         if b_direction == 'manual':
@@ -371,14 +374,15 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
 # %%
 def user_uniq_clean(df_source):
     """
-    If a uniq dataframe is constructed from a user tick, it has some irrelevant columns left over that can be removed.
+    Creatres a unique dataframe of routes from a tick list. It has some irrelevant columns left over that should be removed.
     input df, return df.
     """
+    df_output = df_source.drop_duplicates(subset="Route ID")
     col_list = ['Date', 'Notes', 'Your Stars', 'Style', 'Lead Style']
     for col in col_list:
-        if col in df_source.columns:
-            df_source.drop(columns=col, inplace=True)
-    return df_source
+        if col in df_output.columns:
+            df_output.drop(columns=col, inplace=True)
+    return df_output
 
 # %%
 def routescrape_syncro(df_source, retries=5):
@@ -405,13 +409,14 @@ def routescrape_syncro(df_source, retries=5):
             res = None
         
         return res
-
+    stqdm.pandas(desc="(1/5) Scraping Mainpages")
     if 'Re Mainpage' not in df_source.columns: # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
         df_source.insert(len(df_source.columns),'Re Mainpage',None)
         df_source['Re Mainpage'] = df_source['URL'].progress_apply(page_download)
     else:
         subset = df_source['Re Mainpage'].isna()
         df_source.loc[subset, 'Re Mainpage'] = df_source.loc[subset, 'URL'].progress_apply(page_download)
+    stqdm.pandas(desc="(2/5) Scraping Statpages")
     if 'Re Statpage' not in df_source.columns:
         df_source.insert(len(df_source.columns),'Re Statpage',None)
         df_source['Re Statpage'] = df_source['URL'].progress_apply(lambda x: page_download(insert_str_to_address(x, 'stats')))
@@ -422,59 +427,60 @@ def routescrape_syncro(df_source, retries=5):
     return(df_source)
 
 # %%
-def routescrape_asyncro(df_source, retries=5, workers=10):
-    """
-    Downloads the route page and stat page for each entry.
-    It is suggested you pass this a list of unique routes so it does not download redundantly.
-    Asyncronous utilizing grequest. Approx 75% reduction at workers=10 and 90% reduction at workers=100.
-    Input df, return df with two new columns of grequest.Reponse objects.
-    """
-    s = requests.Session()
-    retries = Retry(total=retries, backoff_factor=0.1, status_forcelist=tuple(range(400, 600)), raise_on_redirect=True, raise_on_status=True)
-    s.mount('http://', HTTPAdapter(max_retries=retries))
+# def routescrape_asyncro_grequests(df_source, retries=5, workers=10):
+#     """
+#     Downloads the route page and stat page for each entry.
+#     It is suggested you pass this a list of unique routes so it does not download redundantly.
+#     Asyncronous utilizing grequest. Approx 75% reduction at workers=10 and 90% reduction at workers=100.
+#     Input df, return df with two new columns of grequest.Reponse objects.
+#     """
+#     s = requests.Session()
+#     retries = Retry(total=retries, backoff_factor=0.1, status_forcelist=tuple(range(400, 600)), raise_on_redirect=True, raise_on_status=True)
+#     s.mount('http://', HTTPAdapter(max_retries=retries))
     
-    def exception_handler(request, exception):
-        print(f'{request} ERROR: {exception}')
+#     def exception_handler(request, exception):
+#         print(f'{request} ERROR: {exception}')
     
-    def insert_str_to_address(url, insert_phrase):
-        str_list = url.split('/')
-        str_list.insert(4, insert_phrase)
-        return '/'.join(str_list)
+#     def insert_str_to_address(url, insert_phrase):
+#         str_list = url.split('/')
+#         str_list.insert(4, insert_phrase)
+#         return '/'.join(str_list)
 
-    def page_download(urls, index):
-        tasks = [grequests.get(url, session=s) for url in urls]
-        res = grequests.map(tasks, exception_handler=exception_handler, size=workers)
-        res_ser = pd.Series(res, index=index)
-        return res_ser
+#     def page_download(urls, index):
+#         tasks = [grequests.get(url, session=s) for url in urls]
+#         res = grequests.map(tasks, exception_handler=exception_handler, size=workers)
+#         res_ser = pd.Series(res, index=index)
+#         return res_ser
 
-    mainpage_urls = df_source['URL'].tolist()
-    statpage_urls = [insert_str_to_address(s, 'stats') for s in mainpage_urls]
+#     mainpage_urls = df_source['URL'].tolist()
+#     statpage_urls = [insert_str_to_address(s, 'stats') for s in mainpage_urls]
 
-    if 'Re Mainpage' not in df_source.columns: # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
-        df_source.insert(len(df_source.columns),'Re Mainpage',None)
-        df_source['Re Mainpage'] = page_download(mainpage_urls, df_source.index)
-    else:
-        subset = df_source['Re Mainpage'].isna()
-        output_subset = df_source.loc[subset, 'Re Mainpage']
-        input_subset = df_source.loc[subset, 'URL']
-        output_subset = page_download(input_subset, output_subset.index)
-    if 'Re Statpage' not in df_source.columns:
-        df_source.insert(len(df_source.columns),'Re Statpage',None)
-        df_source['Re Statpage'] = page_download(statpage_urls, df_source.index)
-    else:
-        subset = df_source['Re Statpage'].isna()
-        output_subset = df_source.loc[subset, 'Re Statpage']
-        input_subset = df_source.loc[subset, 'URL']
-        output_subset = page_download(input_subset, output_subset.index)
+#     if 'Re Mainpage' not in df_source.columns: # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
+#         df_source.insert(len(df_source.columns),'Re Mainpage',None)
+#         df_source['Re Mainpage'] = page_download(mainpage_urls, df_source.index)
+#     else:
+#         subset = df_source['Re Mainpage'].isna()
+#         output_subset = df_source.loc[subset, 'Re Mainpage']
+#         input_subset = df_source.loc[subset, 'URL']
+#         output_subset = page_download(input_subset, output_subset.index)
+#     if 'Re Statpage' not in df_source.columns:
+#         df_source.insert(len(df_source.columns),'Re Statpage',None)
+#         df_source['Re Statpage'] = page_download(statpage_urls, df_source.index)
+#     else:
+#         subset = df_source['Re Statpage'].isna()
+#         output_subset = df_source.loc[subset, 'Re Statpage']
+#         input_subset = df_source.loc[subset, 'URL']
+#         output_subset = page_download(input_subset, output_subset.index)
         
-    return(df_source)
+#     return(df_source)
 
 # %%
-def extract_default_pitch(df_source):
+def extract_default_pitch(df_source, par=False):
     """
     Analyze the mainpage for listed default pitch lengths.
     Necessary for a user's tick export as it includes pitches as their own recorded pitch count. Not required for ToDo exports as it correctly lists the "official" pitch count.
     Input df, return df with new column of integer type.
+    par=True allows parallel threaded computation
     """
     def get_pitches(res):
         from bs4 import BeautifulSoup
@@ -490,15 +496,19 @@ def extract_default_pitch(df_source):
             else:
                 num_pitches = pitch_search.group(0).split(' ')[0]
             return int(num_pitches)
-
-    df_source['Pitches'] = df_source['Re Mainpage'].parallel_apply(get_pitches)
+    if par == True:
+        df_source['Pitches'] = df_source['Re Mainpage'].parallel_apply(get_pitches)
+    else:
+        stqdm.pandas(desc="(3/5) Extracting Default Pitches")
+        df_source['Pitches'] = df_source['Re Mainpage'].progress_apply(get_pitches)
     return df_source
 
 # %%
-def extract_tick_details(df_source):
+def extract_tick_details(df_source, par=False):
     """
     Extracts a df of tick details for each route from its statpage.
     Input df, return df with new column of df type. (Each row has it's own sub-dataframe).
+    par=True allows parallel threaded computation
     """    
     def get_tick_details(res):
         """
@@ -607,10 +617,13 @@ def extract_tick_details(df_source):
             d['Date'] = pd.to_datetime(d['Date'], errors = 'coerce')
             d['Style'] = pd.Categorical(d['Style'])
             d['Lead Style'] = pd.Categorical(d['Lead Style'])
-            
         return d
 
-    df_source['Route Ticks']=df_source['Re Statpage'].parallel_apply(get_tick_details)
+    if par == True:
+        df_source['Route Ticks']=df_source['Re Statpage'].parallel_apply(get_tick_details)
+    else:
+        stqdm.pandas(desc="(4/5) Constructing Tick Dataframe")
+        df_source['Route Ticks']=df_source['Re Statpage'].progress_apply(get_tick_details)
     return(df_source)
 
 # %%
@@ -764,6 +777,7 @@ def tick_analysis(df_source):
     from pandas.api.types import CategoricalDtype
     ### Analyzes tick sub dataframe to create meaningful metrics.
     
+    stqdm.pandas(desc="(5/5) Constructing Tick Analytics")
     df_source[['Num Ticks', 'Num Tickers', 'Lead Ratio', 'OS Ratio', 'Repeat Sender Ratio', 'Mean Attempts To RP', 'Tick Counts']] = df_source.progress_apply(lambda x: analyze_tick_counts(x['Route Ticks'], x['Pitches']), axis=1)
     return df_source
 

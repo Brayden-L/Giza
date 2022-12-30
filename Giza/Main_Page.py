@@ -15,7 +15,7 @@ background: rgba(0,0,0,0);
 }}
 """
 
-st.set_page_config(layout="centered")
+st.set_page_config(layout="centered", page_title="Main Page")
 st.markdown(page_bg_img, unsafe_allow_html=True)
 
 st.title("Giza")

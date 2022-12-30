@@ -1443,6 +1443,18 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "stqdm"
+version = "0.0.4"
+description = "Easy progress bar for streamlit based on the awesome streamlit.progress and tqdm"
+category = "main"
+optional = false
+python-versions = ">=3.6,<4.0"
+
+[package.dependencies]
+streamlit = ">=0.66"
+tqdm = ">=4.50"
+
+[[package]]
 name = "streamlit"
 version = "1.16.0"
 description = "The fastest way to build data apps in Python"
@@ -1772,7 +1784,7 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "8dda6aed60bc6661aed6dfd37d65eba420d6f4171e52259d956d7708218a4887"
+content-hash = "e447f9f6fc18e2d298ff2a0d7cf611e775e10eab212d72492f2f47d4efc06e57"
 
 [metadata.files]
 altair = [
@@ -3140,6 +3152,10 @@ stack-data = [
 ]
 stdiomask = [
     {file = "stdiomask-0.0.6.tar.gz", hash = "sha256:c1e47069ead9e10bda150a26f7922ca01d2adc503042a9d7acf64877a2b9a3a6"},
+]
+stqdm = [
+    {file = "stqdm-0.0.4-py3-none-any.whl", hash = "sha256:9e369d38abdc0a8f14b577fd1ae7a45aa047a4ee5afc8fa102845498b8ceb868"},
+    {file = "stqdm-0.0.4.tar.gz", hash = "sha256:8f83e0d2cd441a4f24ecd1fdaaea437626387b4aa45218af1cde558f8e6746c0"},
 ]
 streamlit = [
     {file = "streamlit-1.16.0-py2.py3-none-any.whl", hash = "sha256:4c135621ede6eb8e9d6e738cc5496d90d66bdb78340eab1eb2dbf1978cc7af80"},
