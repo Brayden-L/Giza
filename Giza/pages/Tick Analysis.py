@@ -15,7 +15,7 @@ with st.expander('How It Works'):
 
 
 col1, col2, col3 = st.columns([1,1,1])
-data_source_type = col1.radio("Data Source Selection", ['Select Provided Dataset', 'Upload Pickle File'], help="placeholder ")
+data_source_type = col1.radio("Data Source Selection", ['Select Provided Dataset', 'Upload Pickle File'], help="placeholder ", horizontal=True)
 if data_source_type == "Select Provided Dataset":
     col1.selectbox("Profiles", ["1","2","3"])
 if data_source_type == "Upload Pickle File":
