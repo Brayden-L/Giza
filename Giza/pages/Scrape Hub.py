@@ -3,41 +3,49 @@ from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
 import streamlit_nested_layout
 from unique_route_handling import *
 
-st.set_page_config(layout="wide")
-
-#Initializations
-if 'scrape_button_state' not in st.session_state:
-    st.session_state['scrape_button_state'] = True
-if 'dl_button_state' not in st.session_state:
-    st.session_state['dl_button_state'] = True
-if 'df_usend_uniq' not in st.session_state:
-    st.session_state['df_usend_uniq'] = pd.DataFrame()
-
 def disable_buttons():
     st.session_state['scrape_button_state'] = True
     st.session_state['dl_button_state'] = True
+    st.session_state['df_usend_uniq'] = pd.DataFrame()
+
+st.set_page_config(layout="wide")
+#Initializations
+if 'scrape_button_state' not in st.session_state:
+    st.session_state.scrape_button_state = True
+if 'dl_button_state' not in st.session_state:
+    st.session_state.dl_button_state = True
+if 'df_usend_uniq' not in st.session_state:
+    st.session_state.df_usend_uniq = pd.DataFrame()
+if 'df_usend_uniq_ticks' not in st.session_state:
+    st.session_state.df_usend_uniq_ticks = pd.DataFrame()
+if 'df_usend_uniq_todos' not in st.session_state:
+    st.session_state.df_usend_uniq_todos = pd.DataFrame()
+if 'list_type' not in st.session_state:
+    st.session_state.list_type = "Ticks"
 
 st.warning("Scraping is time intensive (~1s/route) and can take as long as 20min for a route list of ~1000. If you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
 col1, col2, col3 = st.columns([1,1,1])
 with col1:
     st.header('1. Download')
-    list_type = st.radio("List Type", options=["Ticks", "ToDo"], horizontal=True, on_change=disable_buttons)
+    list_type_options = ["Ticks", "ToDos"]
+    st.session_state.list_type = st.radio("List Type", options=list_type_options, horizontal=True, on_change=disable_buttons, index=list_type_options.index(st.session_state.list_type))
     upload_link = st.text_input("Climber Profile Link", value='https://www.mountainproject.com/user/14015/nick-wilder', placeholder='https://www.mountainproject.com/user/14015/nick-wilder')
+    st.session_state.upload_link_ref = upload_link.split('/')[5]
     if st.button("Download Data"):
         st.session_state['scrape_button_state'] = True
         st.session_state['dl_button_state'] = True
         with st.spinner("Downloading"):
-            if list_type == "Ticks":
+            if st.session_state.list_type == "Ticks":
                 st.session_state.df_usend, error_message = download_routelist('tick', upload_link)
-            if list_type == "ToDo":
+            if st.session_state.list_type == "ToDos":
                 st.session_state.df_usend, error_message = download_routelist('todo', upload_link)
             if error_message:
                 st.error(error_message)
             else:
                 st.session_state.df_usend = data_standardize(st.session_state.df_usend)
-                if list_type == "Ticks":
+                if st.session_state.list_type == "Ticks": # If ticks, special clean required
                     st.session_state.df_usend_uniq = user_uniq_clean(st.session_state.df_usend)
-                if list_type == "ToDo":
+                if st.session_state.list_type == "ToDos": # If todos, relabel necessary
                     st.session_state.df_usend_uniq = st.session_state.df_usend.copy()
                 st.session_state.df_usend_uniq = route_length_fixer(st.session_state.df_usend_uniq, 'express')
                 st.session_state.scrape_button_state = False
@@ -46,15 +54,20 @@ with col2:
     st.header('2. Scrape')
     numrows = len(st.session_state.df_usend_uniq.index)
     if numrows:
-        st.session_state.cutoff = st.slider("""Scrape The "N" Most Recent Routes""", min_value=0, max_value=numrows, value=numrows)
+        st.session_state.scrape_cutoff = st.slider("""Scrape The "N" Most Recent Routes""", min_value=0, max_value=numrows, value=numrows)
     if st.button("Scrape", disabled=st.session_state.scrape_button_state): # TODO Rerunning scrapes to fill missing values works in jupyter but not streamlit. The column is being re-cast to string for some reason upon page rerun.
         st.session_state.dl_button_state = False
-        st.session_state.df_usend_uniq.drop(st.session_state.df_usend_uniq.iloc[st.session_state.cutoff:].index, inplace=True)
+        st.session_state.df_usend_uniq.drop(st.session_state.df_usend_uniq.iloc[st.session_state.scrape_cutoff:].index, inplace=True)
         st.session_state.df_usend_uniq = routescrape_syncro(st.session_state.df_usend_uniq)
-        if list_type == "Ticks":
+        if st.session_state.list_type == "Ticks": # if ticks, need to get default pitch numbers
             st.session_state.df_usend_uniq = extract_default_pitch(st.session_state.df_usend_uniq)
         st.session_state.df_usend_uniq = extract_tick_details(st.session_state.df_usend_uniq)
         st.session_state.df_usend_uniq = tick_analysis(st.session_state.df_usend_uniq)
+        # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session.
+        if st.session_state.list_type == "Ticks":
+            st.session_state.df_usend_uniq_ticks = st.session_state.df_usend_uniq.copy()
+        if st.session_state.list_type == "ToDos":
+            st.session_state.df_usend_uniq_todos = st.session_state.df_usend_uniq.copy()
         with col3:
             failed_mainscrape = st.session_state.df_usend_uniq["Re Mainpage"].isna().sum()
             failed_statscrape = st.session_state.df_usend_uniq["Re Statpage"].isna().sum()
@@ -79,17 +92,17 @@ st.header('3. Export')
 st.download_button(
     label="Download .PKL File For Giza",
     data=pickle.dumps(st.session_state.df_usend_uniq),
-    file_name='scraped_climbs.pkl',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref}.pkl',
     disabled=st.session_state.dl_button_state,
     help="PKL files are used for further analysis within Giza"
 )  
 st.download_button(
     label="Download .CSV For Personal Use",
     data=st.session_state.df_usend_uniq.to_csv().encode('utf-8'),
-    file_name='scraped_climbs.csv',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref}.csv',
     mime='text/csv',
     disabled=st.session_state.dl_button_state,
     help="CSV files are nice if you want to poke around the data yourself in excel or another program"
 )
 
-# st.session_state.df_usend_uniq
+st.session_state
