@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
 import plotly.figure_factory as ff
-import nltk
 
 # Scraping Related
 # import grequests # You will get errors if grequests is not above requests
@@ -164,10 +163,14 @@ def data_standardize(df_source):
         df_source.rename(columns={'Pitches': 'Pitches Ticked'}, inplace=True) # Pitches relabeled to Pitches Ticked
         df_source['Notes'] = df_source['Notes'].apply(lambda x: str(x).replace('&#39;',"'")) # Apostrophe's are html coded in the notes section for some reason.
 
-    # Remove all aid, ice, snow, TR only,and trad/boulder climbing route types as they are not relevant.
+    # Remove all blank, aid, ice, snow, TR only, and trad/boulder climbing route types as they are not relevant.
     df_source = df_source[df_source['Route Type'].str.contains(r'Aid|Ice|Snow') != True]
     df_source = df_source[df_source['Route Type'].str.fullmatch(r'TR') != True] #if this is just a partial match it will detech "trad" too!
     df_source = df_source[df_source['Route Type'].str.contains(r'Trad') & df_source['Route Type'].str.contains(r'Boulder') != True]
+    df_source = df_source[df_source['Route Type'].notnull()]
+    
+    # Some routes have no grade, this seems to be a bug with Mountain Project
+    df_source = df_source[df_source['Rating'].notnull()]
 
     # "trad, sport" goes to "trad". If it uses gear it's trad!
     df_source.loc[df_source['Route Type'].str.contains(r'Trad') & df_source['Route Type'].str.contains(r'Sport'), 'Route Type'] = 'Trad'

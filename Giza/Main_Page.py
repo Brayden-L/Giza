@@ -40,6 +40,8 @@ if 'tick_upload_link_ref' not in st.session_state:
     st.session_state.tick_upload_link_ref = ''
 if 'todo_upload_link_ref' not in st.session_state:
     st.session_state.todo_upload_link_ref = ''
+if 'upload_link_ref_str' not in st.session_state:
+    st.session_state.upload_link_ref_str = ''
 
 st.title("Giza")
 st.header("Extended Rock Climbing Analytics")

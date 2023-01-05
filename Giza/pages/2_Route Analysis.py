@@ -2,6 +2,7 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode
 import streamlit_nested_layout
 from unique_route_handling import *
+from tick_route_handling import tick_merge
 import os
 from pathlib import Path
 from itertools import compress
@@ -25,7 +26,7 @@ if anlist_type == 'Ticks':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
         df_import = st.session_state.df_usend_uniq_ticks.copy()
-        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {st.session_state.todo_upload_link_ref}", icon="ℹ️")
+        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {st.session_state.tick_upload_link_ref}", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/Ticks/'
         files = os.listdir(preldata_path)
@@ -41,7 +42,7 @@ if anlist_type == 'ToDos':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
         df_import = st.session_state.df_usend_uniq_todos.copy()
-        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {st.session_state.tick_upload_link_ref}", icon="ℹ️")
+        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {st.session_state.todo_upload_link_ref}", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/ToDos/'
         files = os.listdir(preldata_path)
@@ -185,3 +186,8 @@ if not df_import.empty:
             gridOptions=gb.build(),
             fit_columns_on_grid_load=True,
             allow_unsafe_jscode=True)
+    
+    if anlist_type == 'Ticks':
+        with st.expander("Tick Analysis"):
+            st.session_state
+            # tick_merge(st.session_state., st.session_state.)

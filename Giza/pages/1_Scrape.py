@@ -9,19 +9,25 @@ def disable_buttons():
     st.session_state['dl_button_state'] = True
     st.session_state['df_usend_uniq'] = pd.DataFrame()
 
-upload_link_ref_str=''
-
 st.set_page_config(layout="wide")
 
 st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
-st.header('Select Type')
+st.header('Select Route List Type')
 list_type_options = ["Ticks", "ToDos"]
-st.session_state.list_type = st.radio("List Type", options=list_type_options, horizontal=True, label_visibility='collapsed', on_change=disable_buttons, index=list_type_options.index(st.session_state.list_type))
+st.session_state.list_type = st.radio("List Type", 
+                                    options=list_type_options,
+                                    horizontal=True,
+                                    on_change=disable_buttons,
+                                    index=list_type_options.index(st.session_state.list_type),
+                                    help="Ticks is a list of routes the user has climbed, ToDos is a list of routes the user would like to climb.")
 col1, col2, col3 = st.columns([1,1,1])
 with col1:
     st.header('1. Download')
     st.write("Link to a user profile")
-    upload_link = st.text_input("Climber Profile Link", value='https://www.mountainproject.com/user/14015/nick-wilder', placeholder='https://www.mountainproject.com/user/14015/nick-wilder', label_visibility='collapsed')
+    upload_link = st.text_input("Climber Profile Link", 
+                                value='https://www.mountainproject.com/user/14015/nick-wilder',
+                                placeholder='https://www.mountainproject.com/user/14015/nick-wilder',
+                                label_visibility='collapsed')
     if st.button(f"Download {st.session_state.list_type} Data"):
         st.session_state['scrape_button_state'] = True
         st.session_state['dl_button_state'] = True
@@ -60,11 +66,11 @@ with col2:
         if st.session_state.list_type == "Ticks":
             st.session_state.df_usend_uniq_ticks = st.session_state.df_usend_uniq.copy()
             st.session_state.tick_upload_link_ref = upload_link.split('/')[5]
-            upload_link_ref_str = st.session_state.tick_upload_link_ref
+            st.session_state.upload_link_ref_str = st.session_state.tick_upload_link_ref
         if st.session_state.list_type == "ToDos":
             st.session_state.df_usend_uniq_todos = st.session_state.df_usend_uniq.copy()
             st.session_state.todo_upload_link_ref = upload_link.split('/')[5]
-            upload_link_ref_str = st.session_state.todo_upload_link_ref
+            st.session_state.upload_link_ref_str = st.session_state.todo_upload_link_ref
         with col3:
             failed_mainscrape = st.session_state.df_usend_uniq["Re Mainpage"].isna().sum()
             failed_statscrape = st.session_state.df_usend_uniq["Re Statpage"].isna().sum()
@@ -94,14 +100,14 @@ if st.session_state.list_type == "ToDos":
 st.download_button(
     label=f"Download {st.session_state.list_type}.PKL File For Giza",
     data=pickle.dumps(dl_val),
-    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{upload_link_ref_str}.pkl',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref_str}.pkl',
     disabled=st.session_state.dl_button_state,
     help="PKL files are what Giza uses to build your analysis"
 )  
 st.download_button(
     label=f"Download {st.session_state.list_type}.CSV For Personal Use",
     data=dl_val.to_csv().encode('utf-8'),
-    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{upload_link_ref_str}.csv',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref_str}.csv',
     mime='text/csv',
     disabled=st.session_state.dl_button_state,
     help="CSV files are nice if you want to poke around the data yourself in excel or another program"
