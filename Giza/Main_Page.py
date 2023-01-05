@@ -36,6 +36,10 @@ if 'list_type' not in st.session_state:
     st.session_state.list_type = "Ticks"
 if 'df_ticks_fil' not in st.session_state:
     st.session_state.df_ticks_fil = pd.DataFrame()
+if 'tick_upload_link_ref' not in st.session_state:
+    st.session_state.tick_upload_link_ref = ''
+if 'todo_upload_link_ref' not in st.session_state:
+    st.session_state.todo_upload_link_ref = ''
 
 st.title("Giza")
 st.header("Extended Rock Climbing Analytics")

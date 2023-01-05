@@ -9,6 +9,8 @@ def disable_buttons():
     st.session_state['dl_button_state'] = True
     st.session_state['df_usend_uniq'] = pd.DataFrame()
 
+upload_link_ref_str=''
+
 st.set_page_config(layout="wide")
 
 st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
@@ -20,7 +22,6 @@ with col1:
     st.header('1. Download')
     st.write("Link to a user profile")
     upload_link = st.text_input("Climber Profile Link", value='https://www.mountainproject.com/user/14015/nick-wilder', placeholder='https://www.mountainproject.com/user/14015/nick-wilder', label_visibility='collapsed')
-    st.session_state.upload_link_ref = upload_link.split('/')[5]
     if st.button(f"Download {st.session_state.list_type} Data"):
         st.session_state['scrape_button_state'] = True
         st.session_state['dl_button_state'] = True
@@ -58,8 +59,12 @@ with col2:
         # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session.
         if st.session_state.list_type == "Ticks":
             st.session_state.df_usend_uniq_ticks = st.session_state.df_usend_uniq.copy()
+            st.session_state.tick_upload_link_ref = upload_link.split('/')[5]
+            upload_link_ref_str = st.session_state.tick_upload_link_ref
         if st.session_state.list_type == "ToDos":
             st.session_state.df_usend_uniq_todos = st.session_state.df_usend_uniq.copy()
+            st.session_state.todo_upload_link_ref = upload_link.split('/')[5]
+            upload_link_ref_str = st.session_state.todo_upload_link_ref
         with col3:
             failed_mainscrape = st.session_state.df_usend_uniq["Re Mainpage"].isna().sum()
             failed_statscrape = st.session_state.df_usend_uniq["Re Statpage"].isna().sum()
@@ -67,10 +72,10 @@ with col2:
             failed_statscrape_list = st.session_state.df_usend_uniq.loc[(st.session_state.df_usend_uniq['Re Statpage'].isna())]['Route']
             scrape_failrate = (1-((failed_mainscrape+failed_statscrape)/(2*numrows)))*100
             if failed_mainscrape+failed_statscrape == 0:
-                col2.success(f"Scrape 100% Successful,\nContinue To Analysis", icon="✅")
+                col2.success(f"Scrape 100% Successful | Continue To Analysis", icon="✅")
             else:
                 st.session_state.scrape_button_state = True
-                col2.warning(f"Scrape Completed With Missing Values ({scrape_failrate}% Success Rate\nYou May Continue To Analysis)", icon="⚠️")
+                col2.warning(f"Scrape Completed With Missing Values ({scrape_failrate}% Success Rate | You May Continue To Analysis)", icon="⚠️")
                 col1, col2 = st.columns([1,1])
                 with col1:
                     st.warning(f"{failed_mainscrape} failed mainpage scrapes")
@@ -89,14 +94,14 @@ if st.session_state.list_type == "ToDos":
 st.download_button(
     label=f"Download {st.session_state.list_type}.PKL File For Giza",
     data=pickle.dumps(dl_val),
-    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref}.pkl',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{upload_link_ref_str}.pkl',
     disabled=st.session_state.dl_button_state,
     help="PKL files are what Giza uses to build your analysis"
 )  
 st.download_button(
     label=f"Download {st.session_state.list_type}.CSV For Personal Use",
     data=dl_val.to_csv().encode('utf-8'),
-    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref}.csv',
+    file_name=f'scraped_climbs_{st.session_state.list_type.lower()}_{upload_link_ref_str}.csv',
     mime='text/csv',
     disabled=st.session_state.dl_button_state,
     help="CSV files are nice if you want to poke around the data yourself in excel or another program"

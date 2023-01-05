@@ -385,7 +385,7 @@ def user_uniq_clean(df_source):
     return df_output
 
 # %%
-def routescrape_syncro(df_source, retries=5):
+def routescrape_syncro(df_source, retries=3):
     """
     Downloads the route page and stat page for each entry.
     It is suggested you pass this a list of unique routes so it does not download redundantly.
