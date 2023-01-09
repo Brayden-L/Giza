@@ -26,6 +26,8 @@ if 'scrape_button_state' not in st.session_state:
     st.session_state.scrape_button_state = True
 if 'dl_button_state' not in st.session_state:
     st.session_state.dl_button_state = True
+if 'df_usend' not in st.session_state:
+    st.session_state.df_usend = pd.DataFrame()
 if 'df_usend_uniq' not in st.session_state:
     st.session_state.df_usend_uniq = pd.DataFrame()
 if 'df_usend_uniq_ticks' not in st.session_state:
@@ -42,6 +44,8 @@ if 'todo_upload_link_ref' not in st.session_state:
     st.session_state.todo_upload_link_ref = ''
 if 'upload_link_ref_str' not in st.session_state:
     st.session_state.upload_link_ref_str = ''
+if 'df_import' not in st.session_state:
+    st.session_state.df_import = pd.DataFrame()
 
 st.title("Giza")
 st.header("Extended Rock Climbing Analytics")
