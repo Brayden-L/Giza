@@ -3,6 +3,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode
 import streamlit_nested_layout
 from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
+from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
 import os
 from pathlib import Path
 from datetime import date
@@ -29,7 +30,7 @@ if anlist_type == 'Ticks':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
         unique_routes_df, import_details, user_ticks_df = st.session_state.tick_scrape_output
-        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {import_details['username']} from {import_details['date_scraped']}", icon="ℹ️")
+        col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/Ticks/'
         files = os.listdir(preldata_path)
@@ -37,6 +38,7 @@ if anlist_type == 'Ticks':
         try:
             unique_routes_df, import_details, user_ticks_df = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
+            st.write(preldata_path / preldata_sel)
             st.error("File Not Found", icon="⚠️")
     if data_source_type == "Upload Pickle File":
         tick_upload = col1.file_uploader("Upload Pickle")
@@ -51,7 +53,7 @@ if anlist_type == 'ToDos':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
         unique_routes_df, import_details, _ = st.session_state.todo_scrape_output
-        col1.info(f"There is a currently loaded scraped dataset saved on this session under username: {import_details['username']} from {import_details['date_scraped']}", icon="ℹ️")
+        col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/ToDos/'
         files = os.listdir(preldata_path)
@@ -143,26 +145,14 @@ if not unique_routes_df.empty:
                 if qdate_fil == f'Calendar Year: {str(year)}':
                     date_fil = pd.to_datetime((date(year, 1, 1), date(year, 12, 31)))
     
-    st.write(date_fil)
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Route Type'].isin(routetype_fil)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Rating'].isin(all_grade_fil)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
     
     with st.expander("Full Unique Route Data Table"):
         # Formatting
-        fulldat_orgcol_uniq = ['Route', 'Pitches', 'Route Type', 'Rating', 'Avg Stars', 'Length', 'Num Ticks', 'Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Location' ]
-        fulldat_floatcol_uniq = ['Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio']
-        df_uniq_fil[fulldat_floatcol_uniq] = df_uniq_fil[fulldat_floatcol_uniq].applymap(lambda x: float('{:,.2f}'.format(x)) if pd.notnull(x) else np.nan) # the if else here retains np.nans blank presentation
-        df_uniq_fil['Route'] = df_uniq_fil.apply(lambda row: f"""<a target="_blank" href="{row['URL']}">{row['Route']}</a>""", axis=1)
-        gb = GridOptionsBuilder.from_dataframe(df_uniq_fil[fulldat_orgcol_uniq])
-        gb.configure_side_bar()
-        gb.configure_default_column(wrapHeaderText=True, autoHeaderHeight=True)
-        gb.configure_columns(fulldat_orgcol_uniq[1:-1], width=90, type='leftAligned')
-        gb.configure_columns(fulldat_floatcol_uniq, type=["numericColumn","numberColumnFilter"])
-        gb.configure_column('Route',
-                            pinned=True,
-                            cellRenderer=JsCode('''function(params) {return params.value}'''))
-        AgGrid(data=df_uniq_fil[fulldat_orgcol_uniq], 
+        df_uniq_fil_pres, gb = aggrid_uniq_format(df_uniq_fil)
+        AgGrid(data=df_uniq_fil_pres, 
             height= 800,
             theme='balham',
             gridOptions=gb.build(),
@@ -182,49 +172,16 @@ if not unique_routes_df.empty:
         numN=1
         if analysis_sel in ['N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade']:
             numN = col3.number_input("N =", min_value=1, value=3)
-        
-        df_uniq_fil_r = df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder']
-        df_uniq_fil_b = df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder']
-        # Rarely led
-        df_low_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] < 0.4) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio')
-        # Rarely toproped
-        df_high_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] > 0.9) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio', ascending=False)
-        # Low OS Ratio
-        df_low_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
-        df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
-        # High OS Ratio
-        df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
-        df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
-        # N superlative OS Ratio by Grade
-        def nsuperlative_os(data, rgrade_array, direction, numN):
-            outlist = []
-            for group in rgrade_array:
-                if direction == 'highest':
-                    outlist.extend(list(data[data['Rating'] == group].nlargest(numN, 'OS Ratio').index))
-                if direction == 'lowest':
-                    outlist.extend(list(data[data['Rating'] == group].nsmallest(numN, 'OS Ratio').index))
-            df_out = data.loc[outlist]
-            return df_out
-        df_nlow_OS_r = nsuperlative_os(df_uniq_fil, selected_rgrade_array, 'lowest', numN)
-        df_nhigh_OS_r = nsuperlative_os(df_uniq_fil, selected_rgrade_array, 'highest', numN)
-        df_nlow_OS_b = nsuperlative_os(df_uniq_fil, selected_bgrade_array, 'lowest', numN)
-        df_nhigh_OS_b = nsuperlative_os(df_uniq_fil, selected_bgrade_array, 'highest', numN)
+        df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b = unique_route_prefabanalysis(df_uniq_fil, selected_rgrade_array, selected_bgrade_array, numN)
         
         if analysis_route_type_option == 'Routes':
-            analysis_datasets = [df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nlow_OS_r]
+            analysis_datasets = [df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r]
         if analysis_route_type_option == 'Boulders':
-            analysis_datasets = [df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nlow_OS_b]
+            analysis_datasets = [df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b]
         
         analysis_dict = dict(zip(analysis_options, analysis_datasets))
-        
-        gb = GridOptionsBuilder.from_dataframe(analysis_dict[analysis_sel][fulldat_orgcol_uniq])
-        gb.configure_side_bar()
-        gb.configure_default_column(wrapHeaderText=True, autoHeaderHeight=True)
-        gb.configure_columns(fulldat_orgcol_uniq[1:-1], width=90, type='leftAligned')
-        gb.configure_column('Route',
-                            pinned=True,
-                            cellRenderer=JsCode('''function(params) {return params.value}'''))
-        AgGrid(data=analysis_dict[analysis_sel][fulldat_orgcol_uniq], 
+        df_uniq_prefab_pres, gb = aggrid_uniq_format(analysis_dict[analysis_sel])
+        AgGrid(data=df_uniq_prefab_pres, 
             height= 800,
             theme='balham',
             gridOptions=gb.build(),
@@ -240,19 +197,8 @@ if not unique_routes_df.empty:
             user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
             user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
             
-            fulldat_orgcol_ticks = ['Route', 'Pitches', 'Route Type', 'Rating', 'Avg Stars', 'Length', 'Num Ticks', 'Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Flash/Onsight', 'Worked Clean', 'Grade Breakthrough', 'Attempts', 'Location' ]
-            fulldat_floatcol_ticks = ['Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio']
-            user_ticks_mff[fulldat_floatcol_ticks] = user_ticks_mff[fulldat_floatcol_ticks].applymap(lambda x: float('{:,.2f}'.format(x)) if pd.notnull(x) else np.nan) # the if else here retains np.nans blank presentation
-            user_ticks_mff['Route'] = user_ticks_mff.apply(lambda row: f"""<a target="_blank" href="{row['URL']}">{row['Route']}</a>""", axis=1)
-            gb = GridOptionsBuilder.from_dataframe(user_ticks_mff[fulldat_orgcol_ticks])
-            gb.configure_side_bar()
-            gb.configure_default_column(wrapHeaderText=True, autoHeaderHeight=True)
-            gb.configure_columns(fulldat_orgcol_ticks[1:-1], width=90, type='leftAligned')
-            gb.configure_columns(fulldat_floatcol_ticks, type=["numericColumn","numberColumnFilter"])
-            gb.configure_column('Route',
-                                pinned=True,
-                                cellRenderer=JsCode('''function(params) {return params.value}'''))
-            AgGrid(data=user_ticks_mff[fulldat_orgcol_ticks], 
+            df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)
+            AgGrid(data=df_ticks_pres, 
                 height= 800,
                 theme='balham',
                 gridOptions=gb.build(),
@@ -264,9 +210,9 @@ if not unique_routes_df.empty:
             col2.write("#")
             pyr_plot_igtick_bool = col2.checkbox("Ignore Tick Cutoff", value=True)
             if pyr_plot_igtick_bool == False:
-                rpyrplot, rtimeplot, bpyrplot, btimeplot = clean_send_plots(user_ticks_mff, selected_rgrade_array, selected_bgrade_array)
+                rpyrplot, rtimeplot, bpyrplot, btimeplot = clean_send_plots(user_ticks_mff, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil)
             if pyr_plot_igtick_bool ==True:
-                rpyrplot, rtimeplot, bpyrplot, btimeplot = clean_send_plots(user_ticks_mf, selected_rgrade_array, selected_bgrade_array)
+                rpyrplot, rtimeplot, bpyrplot, btimeplot = clean_send_plots(user_ticks_mff, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil)
             if pyr_plot_type_sel =='Routes':
                 st.plotly_chart(rpyrplot, theme=None, use_container_width=True)
                 st.plotly_chart(rtimeplot, theme=None, use_container_width=True)
@@ -277,11 +223,23 @@ if not unique_routes_df.empty:
         with st.expander("Tick Report"):
             df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff)
             if not df_bold_leads.empty:
-                st.text("While others opted for the top rope, you faced the sharp end.")
-                st.write(df_bold_leads)
+                st.text("While others opted for the top rope, you faced the sharp end. (lead route with low lead ratio)")
+                df_bold_leads_pres, gb = aggrid_tick_format(df_bold_leads)
+                AgGrid(data=df_bold_leads_pres, 
+                    theme='balham',
+                    gridOptions=gb.build(),
+                    allow_unsafe_jscode=True)
             if not df_impressive_OS.empty:
-                st.text("Few others managed to nab the OS/Flash, but you did.")
-                st.write(df_impressive_OS)
+                st.text("Few others managed to nab the OS/Flash, but you did. (OS route with low OS ratio)")
+                df_impressive_OS_pres, gb = aggrid_tick_format(df_impressive_OS)
+                AgGrid(data=df_impressive_OS_pres, 
+                    theme='balham',
+                    gridOptions=gb.build(),
+                    allow_unsafe_jscode=True)
             if not df_woops_falls.empty:
-                st.text("We all fall, but these were the least excuseable of yours...")
-                st.write(df_woops_falls)
+                st.text("We all fall, but these were the least excuseable of yours... (fell/hung route with high OS ratio)")
+                df_woops_falls_pres, gb = aggrid_tick_format(df_woops_falls)
+                AgGrid(data=df_woops_falls_pres, 
+                    theme='balham',
+                    gridOptions=gb.build(),
+                    allow_unsafe_jscode=True)

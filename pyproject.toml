@@ -20,8 +20,6 @@ tqdm = "^4.64.1"
 lxml = "^4.9.2"
 Scrapy = "^2.7.1"
 cchardet = "^2.1.7"
-grequests = "^0.6.0"
-pandarallel = "^1.6.3"
 ipywidgets = "^8.0.4"
 streamlit = { version = "^1.16.0", python = ">=3.9,<3.9.7 || >3.9.7,<4.0" }
 streamlit-aggrid = "^0.3.3"

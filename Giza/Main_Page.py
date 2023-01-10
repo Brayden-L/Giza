@@ -24,8 +24,8 @@ st.markdown(page_bg_img, unsafe_allow_html=True)
 
 if 'scrape_button_state' not in st.session_state:
     st.session_state.scrape_button_state = True
-if 'dl_button_state' not in st.session_state:
-    st.session_state.dl_button_state = True
+if 'exp_button_state' not in st.session_state:
+    st.session_state.exp_button_state = True
 if 'df_usend' not in st.session_state:
     st.session_state.df_usend = pd.DataFrame()
 if 'df_usend_uniq' not in st.session_state:

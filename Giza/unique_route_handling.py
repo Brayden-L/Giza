@@ -12,7 +12,6 @@ import plotly.figure_factory as ff
 # import grequests # You will get errors if grequests is not above requests
 import requests
 from requests.adapters import HTTPAdapter, Retry
-from pandarallel import pandarallel
 from bs4 import BeautifulSoup
 import lxml
 import cchardet
@@ -22,7 +21,6 @@ import re
 import pyinputplus as pyip
 import datetime as dt
 from datetime import datetime
-from tqdm import tqdm
 from stqdm import stqdm
 import pickle
 import random
@@ -31,11 +29,6 @@ import string
 
 # Initializations
 stqdm.pandas()
-pandarallel.initialize(progress_bar=True)
-
-# Warning Supression
-import warnings
-warnings.simplefilter("ignore", category=UserWarning) # Grequests is a monkeypatch and not intended to be used with jupyter. This silences an annoying userwarning.
 
 # %%
 # Defines Project Wide Constants
@@ -160,6 +153,7 @@ def data_standardize(df_source):
     # Some cleanup is only necessary on the tick list, and not the todo list. Only the tick list has a Date column.
     if 'Date' in df_source.columns:
         df_source['Date'] = pd.to_datetime(df_source['Date']) # 'Date' to datetype
+        df_source['Date Formatted'] = df_source['Date'].dt.strftime('%Y-%m-%d')
         df_source.rename(columns={'Pitches': 'Pitches Ticked'}, inplace=True) # Pitches relabeled to Pitches Ticked
         df_source['Notes'] = df_source['Notes'].apply(lambda x: str(x).replace('&#39;',"'")) # Apostrophe's are html coded in the notes section for some reason.
 
@@ -430,54 +424,6 @@ def routescrape_syncro(df_source, retries=3):
     return(df_source)
 
 # %%
-# def routescrape_asyncro_grequests(df_source, retries=5, workers=10):
-#     """
-#     Downloads the route page and stat page for each entry.
-#     It is suggested you pass this a list of unique routes so it does not download redundantly.
-#     Asyncronous utilizing grequest. Approx 75% reduction at workers=10 and 90% reduction at workers=100.
-#     Input df, return df with two new columns of grequest.Reponse objects.
-#     """
-#     s = requests.Session()
-#     retries = Retry(total=retries, backoff_factor=0.1, status_forcelist=tuple(range(400, 600)), raise_on_redirect=True, raise_on_status=True)
-#     s.mount('http://', HTTPAdapter(max_retries=retries))
-    
-#     def exception_handler(request, exception):
-#         print(f'{request} ERROR: {exception}')
-    
-#     def insert_str_to_address(url, insert_phrase):
-#         str_list = url.split('/')
-#         str_list.insert(4, insert_phrase)
-#         return '/'.join(str_list)
-
-#     def page_download(urls, index):
-#         tasks = [grequests.get(url, session=s) for url in urls]
-#         res = grequests.map(tasks, exception_handler=exception_handler, size=workers)
-#         res_ser = pd.Series(res, index=index)
-#         return res_ser
-
-#     mainpage_urls = df_source['URL'].tolist()
-#     statpage_urls = [insert_str_to_address(s, 'stats') for s in mainpage_urls]
-
-#     if 'Re Mainpage' not in df_source.columns: # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
-#         df_source.insert(len(df_source.columns),'Re Mainpage',None)
-#         df_source['Re Mainpage'] = page_download(mainpage_urls, df_source.index)
-#     else:
-#         subset = df_source['Re Mainpage'].isna()
-#         output_subset = df_source.loc[subset, 'Re Mainpage']
-#         input_subset = df_source.loc[subset, 'URL']
-#         output_subset = page_download(input_subset, output_subset.index)
-#     if 'Re Statpage' not in df_source.columns:
-#         df_source.insert(len(df_source.columns),'Re Statpage',None)
-#         df_source['Re Statpage'] = page_download(statpage_urls, df_source.index)
-#     else:
-#         subset = df_source['Re Statpage'].isna()
-#         output_subset = df_source.loc[subset, 'Re Statpage']
-#         input_subset = df_source.loc[subset, 'URL']
-#         output_subset = page_download(input_subset, output_subset.index)
-        
-#     return(df_source)
-
-# %%
 def extract_default_pitch(df_source, par=False):
     """
     Analyze the mainpage for listed default pitch lengths.
@@ -486,8 +432,6 @@ def extract_default_pitch(df_source, par=False):
     par=True allows parallel threaded computation
     """
     def get_pitches(res):
-        from bs4 import BeautifulSoup
-        import re
         if res is None:
             return None
         else:
@@ -500,7 +444,7 @@ def extract_default_pitch(df_source, par=False):
                 num_pitches = pitch_search.group(0).split(' ')[0]
             return int(num_pitches)
     if par == True:
-        df_source['Pitches'] = df_source['Re Mainpage'].parallel_apply(get_pitches)
+        pass
     else:
         stqdm.pandas(desc="(3/5) Extracting Default Pitches")
         df_source['Pitches'] = df_source['Re Mainpage'].progress_apply(get_pitches)
@@ -538,9 +482,6 @@ def extract_tick_details(df_source, par=False):
         Comment : str
             Tick comment
         """
-        from bs4 import BeautifulSoup
-        import re
-        import pandas as pd
         name = []
         namelink = []
         entrydate = []
@@ -623,7 +564,7 @@ def extract_tick_details(df_source, par=False):
         return d
 
     if par == True:
-        df_source['Route Ticks']=df_source['Re Statpage'].parallel_apply(get_tick_details)
+        pass
     else:
         stqdm.pandas(desc="(4/5) Constructing Tick Dataframe")
         df_source['Route Ticks']=df_source['Re Statpage'].progress_apply(get_tick_details)
@@ -776,12 +717,57 @@ def tick_analysis(df_source):
     df
         same df with added columns
     """
-    import pandas as pd
-    from pandas.api.types import CategoricalDtype
     ### Analyzes tick sub dataframe to create meaningful metrics.
     
     stqdm.pandas(desc="(5/5) Constructing Tick Analytics")
     df_source[['Num Ticks', 'Num Tickers', 'Lead Ratio', 'OS Ratio', 'Repeat Sender Ratio', 'Mean Attempts To RP', 'Tick Counts']] = df_source.progress_apply(lambda x: analyze_tick_counts(x['Route Ticks'], x['Pitches']), axis=1)
     return df_source
 
+# %%
+def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrade_array, numN):
+    """Creates prefab tables based on tick metrics from source dataframe
 
+    Parameters
+    ----------
+    df_source : df
+        source dataframe
+    selected_rgrade_array : list
+        list of route grades
+    selected_bgrade_array : list
+        list of boulder grades
+    numN : int
+        number of superlative
+
+    Returns
+    -------
+    Many dataframes
+        Many dataframes filtered as such.
+    """
+    df_uniq_fil_r = df_source[df_source['Route Type'] != 'Boulder']
+    df_uniq_fil_b = df_source[df_source['Route Type'] == 'Boulder']
+    # Rarely led
+    df_low_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] < 0.4) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio')
+    # Rarely toproped
+    df_high_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] > 0.9) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio', ascending=False)
+    # Low OS Ratio
+    df_low_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
+    df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.10)].sort_values(by='OS Ratio')
+    # High OS Ratio
+    df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
+    df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.5)].sort_values(by='OS Ratio', ascending=False)
+    # N superlative OS Ratio by Grade
+    def nsuperlative_os(data, rgrade_array, direction, numN):
+        outlist = []
+        for group in rgrade_array:
+            if direction == 'highest':
+                outlist.extend(list(data[data['Rating'] == group].nlargest(numN, 'OS Ratio').index))
+            if direction == 'lowest':
+                outlist.extend(list(data[data['Rating'] == group].nsmallest(numN, 'OS Ratio').index))
+        df_out = data.loc[outlist]
+        return df_out
+    df_nlow_OS_r = nsuperlative_os(df_source, selected_rgrade_array, 'lowest', numN)
+    df_nhigh_OS_r = nsuperlative_os(df_source, selected_rgrade_array, 'highest', numN)
+    df_nlow_OS_b = nsuperlative_os(df_source, selected_bgrade_array, 'lowest', numN)
+    df_nhigh_OS_b = nsuperlative_os(df_source, selected_bgrade_array, 'highest', numN)
+    
+    return df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b

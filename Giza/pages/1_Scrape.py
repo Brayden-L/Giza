@@ -6,9 +6,9 @@ from datetime import date
 import json
 
 def disable_buttons():
-    st.session_state['scrape_button_state'] = True
-    st.session_state['dl_button_state'] = True
-    st.session_state['df_usend_uniq'] = pd.DataFrame()
+    st.session_state.scrape_button_state = True
+    st.session_state.exp_button_state = True
+    st.session_state.df_usend_uniq = pd.DataFrame()
 
 st.set_page_config(layout="wide")
 
@@ -27,11 +27,12 @@ with col1:
     st.write("Link to a user profile")
     upload_link = st.text_input("Climber Profile Link", 
                                 value='https://www.mountainproject.com/user/14015/nick-wilder',
-                                placeholder='https://www.mountainproject.com/user/14015/nick-wilder',
-                                label_visibility='collapsed')
+                                placeholder='https://www.mountainproject.com/user/...',
+                                label_visibility='collapsed',
+                                on_change=disable_buttons)
     if st.button(f"Download {st.session_state.list_type} Data"):
         st.session_state.scrape_button_state = True
-        st.session_state.dl_button_state = True
+        st.session_state.exp_button_state = True
         with st.spinner("Downloading"):
             if st.session_state.list_type == "Ticks":
                 st.session_state.df_usend, error_message = download_routelist('tick', upload_link)
@@ -55,8 +56,8 @@ with col2:
     if numrows:
         st.session_state.scrape_cutoff = st.slider("""Scrape The "N" Most Recent Routes""", min_value=0, max_value=numrows, value=numrows)
         st.markdown(f"Estimated Scrape Time: {(2+(st.session_state.scrape_cutoff/45)):.0f}min")
-    if st.button(f"Scrape {st.session_state.list_type}", disabled=st.session_state.scrape_button_state): # TODO Rerunning scrapes to fill missing values works in jupyter but not streamlit. The column is being re-cast to string for some reason upon page rerun.
-        st.session_state.dl_button_state = False
+    if st.button(f"Scrape {st.session_state.list_type}", disabled=st.session_state.scrape_button_state):
+        st.session_state.exp_button_state = False
         st.session_state.df_usend_uniq.drop(st.session_state.df_usend_uniq.iloc[st.session_state.scrape_cutoff:].index, inplace=True)
         st.session_state.df_usend = st.session_state.df_usend[st.session_state.df_usend['Route'].isin(st.session_state.df_usend_uniq['Route'])]
         st.session_state.df_usend_uniq = routescrape_syncro(st.session_state.df_usend_uniq)
@@ -85,7 +86,7 @@ with col2:
                 st.info("To retry, redownload the data then scrape again.", icon="ℹ️")
 
 # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session.
-st.session_state.upload_link_ref_str = upload_link.split('/')[5]
+st.session_state.upload_link_ref_str = '/'.join(upload_link.split('/')[4:6])
 scrape_details = {'route_list_type': st.session_state.list_type.lower(), 'username': st.session_state.upload_link_ref_str, 'date_scraped': date.today()}
 if st.session_state.list_type == "Ticks":
     st.session_state.df_usend_uniq_ticks = st.session_state.df_usend_uniq.copy()
@@ -105,7 +106,7 @@ st.download_button(
     label=f"Download {st.session_state.list_type}.PKL File For Giza",
     data=pickle.dumps(full_scrape_output),
     file_name=f'Giza_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref_str}_{date.today()}.pkl',
-    disabled=st.session_state.dl_button_state,
+    disabled=st.session_state.exp_button_state,
     help="PKL files are what Giza uses to build your analysis"
 )  
 st.download_button(
@@ -113,6 +114,6 @@ st.download_button(
     data=uniq_df_output.to_csv().encode('utf-8'),
     file_name=f'Giza_{st.session_state.list_type.lower()}_{st.session_state.upload_link_ref_str}_{date.today()}.csv',
     mime='text/csv',
-    disabled=st.session_state.dl_button_state,
+    disabled=st.session_state.exp_button_state,
     help="CSV files are nice if you want to poke around the data yourself in excel or another program"
 )

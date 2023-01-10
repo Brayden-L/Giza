@@ -56,8 +56,9 @@ def flag_notable_ticks(df_source):
     df_all_dupes = df_source[df_source.duplicated(subset="Route ID", keep=False)] # First we filter for all duplicate entries.
     df_all_worked = df_all_dupes.groupby('Route ID').filter(lambda x: ~x['Lead Style'].isin(CLEAN_SEND_FIRST).any()) # Then we remove all groups which have a lead style of flash or onsight to eliminate group 3.
     df_worked_clean_rponly = df_all_worked[df_all_worked.groupby('Route ID')['Lead Style'].apply(lambda x: x.isin(CLEAN_SEND_WORKED))] # fell/hungs and TRs remain, so we take ticks from CLEAN_SEND_WORKED.
-    df_worked_clean_earliest = df_worked_clean_rponly.loc[df_worked_clean_rponly.groupby('Route ID')['Date'].idxmin()] # Use only the earliest redpoint to correctly identify the first redpoint.
-    df_source.loc[df_worked_clean_earliest.index.values, "Worked Clean"] = True
+    if not df_worked_clean_rponly.empty:
+        df_worked_clean_earliest = df_worked_clean_rponly.loc[df_worked_clean_rponly.groupby('Route ID')['Date'].idxmin()] # Use only the earliest redpoint to correctly identify the first redpoint.
+        df_source.loc[df_worked_clean_earliest.index.values, "Worked Clean"] = True
 
     # Flag grade breakthrough ticks
     dfbreakthr = df_source[(df_source['Flash/Onsight'] == True) | (df_source['Worked Clean'] == True)]
@@ -82,7 +83,7 @@ def flag_notable_ticks(df_source):
         df_source['Attempts'] = None
     return df_source
 
-def clean_send_plots(df_source, selected_rgrade_array, selected_bgrade_array):
+def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil):
     from unique_route_handling import CLEAN_SEND_FIRST, CLEAN_SEND, YDS_GRADES_FULL, V_GRADES_FULL
     import plotly.express as px
 
@@ -99,22 +100,20 @@ def clean_send_plots(df_source, selected_rgrade_array, selected_bgrade_array):
     # df_clean_sends_b = df_clean_sends_b.loc[df_clean_sends_r.groupby('Route ID')['Date'].idxmin()] # Optionally ignore subequent clean sends
     df_clean_sends_b['Date Formatted'] = df_clean_sends_b['Date'].dt.date
 
-    fig1 = px.bar(df_clean_sends_r, y="Rating", orientation='h', category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig1.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Routes Sent'}, yaxis={'title': 'Grade', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    fig1 = px.bar(df_clean_sends_r, y="Rating", orientation='h', height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    fig1.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Routes Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
     fig1.update_traces(marker_color='#7A4F25', marker_line_width=2, marker_line_color='white', textposition = "inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
-    # fig.update_traces(marker_color=list(map(lambda x: '#7A4F25' if (x=='') else '#bf9315', df_clean_sends['Attempts'])), textposition = "inside",  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig2 = px.scatter(df_clean_sends_r, "Date", "Rating", category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig2.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': 'Grade', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    fig2 = px.scatter(df_clean_sends_r, "Date", "Rating", height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    fig2.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
     fig2.update_traces(marker_symbol='square', marker_color='#7A4F25', marker_size=20, marker_line_width=2, marker_line_color='black', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig3 = px.bar(df_clean_sends_b, y="Rating", orientation='h', category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig3.update_layout(font={'family':'Courier New', 'color':'black', 'size':18}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Problems Sent'}, yaxis={'title': 'Grade', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    fig3 = px.bar(df_clean_sends_b, y="Rating", orientation='h', height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    fig3.update_layout(font={'family':'Courier New', 'color':'black', 'size':18}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Problems Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
     fig3.update_traces(marker_color='#7A4F25', marker_line_width=2, marker_line_color='white', textposition = "inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
-    # fig.update_traces(marker_color=list(map(lambda x: '#7A4F25' if (x=='') else '#bf9315', df_clean_sends['Attempts'])), textposition = "inside",  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig4 = px.scatter(df_clean_sends_b, "Date", "Rating", category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig4.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': 'Grade', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    fig4 = px.scatter(df_clean_sends_b, "Date", "Rating", height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    fig4.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
     fig4.update_traces(marker_symbol='square', marker_color='#7A4F25', marker_size=20, marker_line_width=2, marker_line_color='black', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
     return fig1, fig2, fig3, fig4
