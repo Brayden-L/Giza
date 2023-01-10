@@ -4,6 +4,7 @@ import streamlit_nested_layout
 from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
+from long_strs import analysis_explainer
 import os
 from pathlib import Path
 from datetime import date
@@ -17,8 +18,8 @@ unique_routes_df = pd.DataFrame()
 st.title("Tick Analysis")
 st.subheader("Explore Your Ticks and Discover Notable Sends")
 st.markdown('---')
-with st.expander('How It Works'):
-    st.markdown("Placeholder")
+with st.expander('Details'):
+    st.markdown(analysis_explainer)
 
 col1, col2, col3 = st.columns([1.5,0.25,1.25])
 col1.header('Dataset Selection')
@@ -38,7 +39,6 @@ if anlist_type == 'Ticks':
         try:
             unique_routes_df, import_details, user_ticks_df = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
-            st.write(preldata_path / preldata_sel)
             st.error("File Not Found", icon="⚠️")
     if data_source_type == "Upload Pickle File":
         tick_upload = col1.file_uploader("Upload Pickle")
@@ -117,18 +117,20 @@ if not unique_routes_df.empty:
                                                         value=grade_filter_align(df_uniq_fil, selected_bgrade_array)[1])
             b_grade_fil = selected_bgrade_array[selected_bgrade_array.index(b_grade_min) : selected_bgrade_array.index(b_grade_max)+1]
         all_grade_fil = r_grade_fil + b_grade_fil
+
+    col1, col2, col3, col4 = st.columns([1.25,0.25,0.5,2.25])
+    pitch_fil_sel = col1.multiselect("Pitch Type", options=['Single Pitch', 'Multi Pitch'], default=['Single Pitch', 'Multi Pitch'])
     if anlist_type == "Ticks":
-        col1, col2 = st.columns([1,3])
         date_min = user_ticks_df['Date'].min()
         date_max = user_ticks_df['Date'].max()
-        date_fil_type = col1.radio("Date Filter Type", options=['Date Range', 'Quick Filter'])
+        date_fil_type = col3.radio("Date Filter Type", options=['Date Range', 'Quick Filter'])
         if date_fil_type == 'Date Range':
-            date_fil = col2.date_input("Date Filter", value=(date_min, date_max), min_value=date_min, max_value=date_max)
+            date_fil = col4.date_input("Date Filter", value=(date_min, date_max), min_value=date_min, max_value=date_max)
             date_fil = pd.to_datetime(date_fil)
         if date_fil_type == 'Quick Filter':
             year_list = user_ticks_df['Date'].dt.year.unique().tolist()
             datefil_year_options = [f'Calendar Year: {str(year)}' for year in year_list]
-            qdate_fil = col2.selectbox("Quick Date Filter", options=['Last 1 Month', 'Last 3 Months', 'Last 6 Months', 'Last 12 Months']+datefil_year_options)
+            qdate_fil = col4.selectbox("Quick Date Filter", options=datefil_year_options+['Last 1 Month', 'Last 3 Months', 'Last 6 Months', 'Last 12 Months'])
             def date_del_month(num_months):
                 deldate = date.today() + relativedelta(months=num_months)
                 date_fil = pd.to_datetime((deldate, date.today()))
@@ -144,22 +146,25 @@ if not unique_routes_df.empty:
             for year in year_list:
                 if qdate_fil == f'Calendar Year: {str(year)}':
                     date_fil = pd.to_datetime((date(year, 1, 1), date(year, 12, 31)))
-    
+    col1, col2 = st.columns([0.3, 4])
+    loc_max_tier = df_uniq_fil['Location'].apply(lambda x: len(x.split('>'))).max()
+    loc_tier = col1.number_input("Location Tier", min_value=1, max_value=loc_max_tier, value=1, help='Location Tier describes how "deep" the location filter goes. Tier1 is typically a state, Tier2 is typically a geographic area or major destination, Tier3 is typically a sub-area, Tier4 and further typically denote crags and subcrags.')
+    location_list = df_uniq_fil['Location'].apply(lambda x: '>'.join(x.split('>')[0:(loc_tier)])).unique()
+    loc_sel = col2.multiselect("Location", options=location_list)
+
+    if len(pitch_fil_sel) == 1:
+        if pitch_fil_sel[0] == 'Single Pitch':
+            df_uniq_fil = df_uniq_fil[df_uniq_fil['Pitches'] == 1]
+        if pitch_fil_sel[0] == 'Multi Pitch':
+            df_uniq_fil = df_uniq_fil[df_uniq_fil['Pitches'] > 1]
+    if not loc_sel == '':
+        df_uniq_fil = df_uniq_fil[df_uniq_fil['Location'].str.contains('|'.join(loc_sel))]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Route Type'].isin(routetype_fil)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Rating'].isin(all_grade_fil)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
     
-    with st.expander("Full Unique Route Data Table"):
-        # Formatting
-        df_uniq_fil_pres, gb = aggrid_uniq_format(df_uniq_fil)
-        AgGrid(data=df_uniq_fil_pres, 
-            height= 800,
-            theme='balham',
-            gridOptions=gb.build(),
-            fit_columns_on_grid_load=True,
-            allow_unsafe_jscode=True)
-    
-    with st.expander("PreFab Unique Route Data Analysis"):
+    st.markdown('---')    
+    with st.expander("Prefabricated Route Analysis"):
         col1, col2, col3 = st.columns([1,3,1])
         analysis_route_type_option = col1.radio("Route Type", options=['Routes', 'Boulders'], horizontal=True)
         analysis_options_r = ['Rarely Led Routes', 'Rarely Toproped Routes', 'Commonly Onsighted Routes', 'Rarely Onsighted Routes', 'N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade']
@@ -187,23 +192,33 @@ if not unique_routes_df.empty:
             gridOptions=gb.build(),
             fit_columns_on_grid_load=True,
             allow_unsafe_jscode=True)
+
+    with st.expander("Full Data: Routes"):
+        # Formatting
+        df_uniq_fil_pres, gb = aggrid_uniq_format(df_uniq_fil)
+        AgGrid(data=df_uniq_fil_pres, 
+            height= 800,
+            theme='balham',
+            gridOptions=gb.build(),
+            fit_columns_on_grid_load=True,
+            allow_unsafe_jscode=True)
+        
     if anlist_type == 'Ticks' and len(date_fil) == 2:
-        with st.expander("Full Tick Data Table"):
-            user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
-            user_ticks_mf = user_ticks_merged.copy()
-            user_ticks_mf = flag_notable_ticks(user_ticks_mf)
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
-            user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
-            
-            df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)
-            AgGrid(data=df_ticks_pres, 
-                height= 800,
-                theme='balham',
-                gridOptions=gb.build(),
-                allow_unsafe_jscode=True)
-            
+        user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
+        user_ticks_mf = user_ticks_merged.copy()
+        user_ticks_mf = flag_notable_ticks(user_ticks_mf)
+        if len(pitch_fil_sel) == 1:
+            if pitch_fil_sel[0] == 'Single Pitch':
+                user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] == 1]
+            if pitch_fil_sel[0] == 'Multi Pitch':
+                user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] > 1]
+        if not loc_sel == '':
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
+        user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
+        user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
+        user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
+        user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
+        st.markdown('---')
         with st.expander("Tick Pyramid Plots"):
             col1, col2, col3 = st.columns([1,2,5])
             pyr_plot_type_sel = col1.radio("Plot Type Selection", options=['Routes', 'Boulders'])
@@ -220,26 +235,39 @@ if not unique_routes_df.empty:
                 st.plotly_chart(bpyrplot, theme=None, use_container_width=True)
                 st.plotly_chart(btimeplot, theme=None, use_container_width=True)
 
-        with st.expander("Tick Report"):
+        with st.expander("Notable Sends"):
             df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff)
             if not df_bold_leads.empty:
-                st.text("While others opted for the top rope, you faced the sharp end. (lead route with low lead ratio)")
+                st.markdown("##### [Led route with low lead ratio] | While others opted for the top rope, you faced the sharp end.")
                 df_bold_leads_pres, gb = aggrid_tick_format(df_bold_leads)
                 AgGrid(data=df_bold_leads_pres, 
                     theme='balham',
                     gridOptions=gb.build(),
                     allow_unsafe_jscode=True)
+                st.text('')
+            st.markdown('---')
             if not df_impressive_OS.empty:
-                st.text("Few others managed to nab the OS/Flash, but you did. (OS route with low OS ratio)")
+                st.markdown("##### [OS'd route with low OS ratio] | Few others managed to nab the OS/Flash, but you did.")
                 df_impressive_OS_pres, gb = aggrid_tick_format(df_impressive_OS)
                 AgGrid(data=df_impressive_OS_pres, 
                     theme='balham',
                     gridOptions=gb.build(),
                     allow_unsafe_jscode=True)
+                st.text('')
+            st.markdown('---')
             if not df_woops_falls.empty:
-                st.text("We all fall, but these were the least excuseable of yours... (fell/hung route with high OS ratio)")
+                st.markdown("##### [Fell/hung route with high OS ratio] | We all fall, but these were your most agregious slip ups.")
                 df_woops_falls_pres, gb = aggrid_tick_format(df_woops_falls)
                 AgGrid(data=df_woops_falls_pres, 
                     theme='balham',
                     gridOptions=gb.build(),
                     allow_unsafe_jscode=True)
+                st.text('')
+                
+        with st.expander("Full Data: Ticks"):
+            df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)
+            AgGrid(data=df_ticks_pres, 
+                height= 800,
+                theme='balham',
+                gridOptions=gb.build(),
+                allow_unsafe_jscode=True)

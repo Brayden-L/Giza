@@ -26,7 +26,7 @@ with col1:
     st.header('1. Download')
     st.write("Link to a user profile")
     upload_link = st.text_input("Climber Profile Link", 
-                                value='https://www.mountainproject.com/user/14015/nick-wilder',
+                                value='https://www.mountainproject.com/user/200554494/amity-warme',
                                 placeholder='https://www.mountainproject.com/user/...',
                                 label_visibility='collapsed',
                                 on_change=disable_buttons)
@@ -63,6 +63,7 @@ with col2:
         st.session_state.df_usend_uniq = routescrape_syncro(st.session_state.df_usend_uniq)
         if st.session_state.list_type == "Ticks": # if ticks, need to get default pitch numbers
             st.session_state.df_usend_uniq = extract_default_pitch(st.session_state.df_usend_uniq)
+        st.session_state.df_usend_uniq = assign_spmp(st.session_state.df_usend_uniq)
         st.session_state.df_usend_uniq = extract_tick_details(st.session_state.df_usend_uniq)
         st.session_state.df_usend_uniq = tick_analysis(st.session_state.df_usend_uniq)
         with col3:
@@ -75,7 +76,7 @@ with col2:
                 col2.success(f"Scrape 100% Successful | Continue To Analysis", icon="✅")
             else:
                 st.session_state.scrape_button_state = True
-                col2.warning(f"Scrape Completed With Missing Values ({scrape_failrate}% Success Rate | You May Continue To Analysis)", icon="⚠️")
+                col2.warning(f"Scrape Completed With Missing Values ({scrape_failrate:.2f}% Success Rate | You May Continue To Analysis)", icon="⚠️")
                 col1, col2 = st.columns([1,1])
                 with col1:
                     st.warning(f"{failed_mainscrape} failed mainpage scrapes")

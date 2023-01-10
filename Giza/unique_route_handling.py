@@ -285,7 +285,6 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
     df_source : df
         Original df with grade homogenization
     """
-    grade_homo_choice = ['round down', 'round up', 'round evenly', 'hand determine']
     rating_isolate = df_source['Original Rating'].apply(lambda row: [val for val in row.split()][0]) # This is a fail-safe to ensure we are only looking at the part of the rating we care about, not risk or sub-ratings.
 
     # Reset 'Rating' column so this mapping can be re-run
@@ -424,12 +423,11 @@ def routescrape_syncro(df_source, retries=3):
     return(df_source)
 
 # %%
-def extract_default_pitch(df_source, par=False):
+def extract_default_pitch(df_source):
     """
     Analyze the mainpage for listed default pitch lengths.
     Necessary for a user's tick export as it includes pitches as their own recorded pitch count. Not required for ToDo exports as it correctly lists the "official" pitch count.
-    Input df, return df with new column of integer type.
-    par=True allows parallel threaded computation
+    Input df, return df with new Pitches column of integer type.
     """
     def get_pitches(res):
         if res is None:
@@ -438,24 +436,46 @@ def extract_default_pitch(df_source, par=False):
             soup = BeautifulSoup(res.text, 'lxml')
             route_type_text = str(soup.find(class_="description-details").find_all('td')[1])
             pitch_search = re.search(r'\d+ pitches',route_type_text)
-            if str(type(pitch_search)) == "<class 'NoneType'>":
+            if isinstance(pitch_search, type(None)):
                 num_pitches = 1
             else:
                 num_pitches = pitch_search.group(0).split(' ')[0]
             return int(num_pitches)
-    if par == True:
-        pass
-    else:
-        stqdm.pandas(desc="(3/5) Extracting Default Pitches")
-        df_source['Pitches'] = df_source['Re Mainpage'].progress_apply(get_pitches)
+    stqdm.pandas(desc="(3/5) Extracting Default Pitches")
+    df_source['Pitches'] = df_source['Re Mainpage'].progress_apply(get_pitches)
     return df_source
 
 # %%
-def extract_tick_details(df_source, par=False):
+def assign_spmp(df_source):
+    """Tags single pitch and multipitch climbs
+
+    Parameters
+    ----------
+    df_source : df
+        input df
+
+    Returns
+    -------
+    df
+        output df with new SP and MP tag column
+    """
+    sp_bool = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1))
+    mp_bool = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] > 1))
+    if sp_bool is None:
+        df_source['SP'] = None
+    else:
+        df_source['SP'] = sp_bool.replace(False, None)
+    if mp_bool is None:
+        df_source['MP'] = None
+    else:
+        df_source['MP'] = mp_bool.replace(False, None)
+    return df_source
+
+# %%
+def extract_tick_details(df_source):
     """
     Extracts a df of tick details for each route from its statpage.
     Input df, return df with new column of df type. (Each row has it's own sub-dataframe).
-    par=True allows parallel threaded computation
     """    
     def get_tick_details(res):
         """
@@ -563,11 +583,8 @@ def extract_tick_details(df_source, par=False):
             d['Lead Style'] = pd.Categorical(d['Lead Style'])
         return d
 
-    if par == True:
-        pass
-    else:
-        stqdm.pandas(desc="(4/5) Constructing Tick Dataframe")
-        df_source['Route Ticks']=df_source['Re Statpage'].progress_apply(get_tick_details)
+    stqdm.pandas(desc="(4/5) Constructing Tick Dataframe")
+    df_source['Route Ticks']=df_source['Re Statpage'].progress_apply(get_tick_details)
     return(df_source)
 
 # %%
@@ -751,10 +768,10 @@ def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrad
     df_high_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] > 0.9) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio', ascending=False)
     # Low OS Ratio
     df_low_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
-    df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.10)].sort_values(by='OS Ratio')
+    df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
     # High OS Ratio
     df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
-    df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.5)].sort_values(by='OS Ratio', ascending=False)
+    df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
     # N superlative OS Ratio by Grade
     def nsuperlative_os(data, rgrade_array, direction, numN):
         outlist = []
