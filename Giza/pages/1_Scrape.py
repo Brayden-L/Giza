@@ -5,13 +5,14 @@ from unique_route_handling import *
 from datetime import date
 import json
 
+### Setup
+st.set_page_config(layout="wide")
 def disable_buttons():
     st.session_state.scrape_button_state = True
     st.session_state.exp_button_state = True
     st.session_state.df_usend_uniq = pd.DataFrame()
 
-st.set_page_config(layout="wide")
-
+### Download
 st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
 st.header('Select Route List Type')
 list_type_options = ["Ticks", "ToDos"]
@@ -49,6 +50,8 @@ with col1:
                 st.session_state.df_usend_uniq = route_length_fixer(st.session_state.df_usend_uniq, 'express')
                 st.session_state.scrape_button_state = False
                 st.success("Download Successful", icon="✅")
+
+### Scrape
 with col2:
     st.header('2. Scrape')
     st.write("Download and extract route information")
@@ -86,7 +89,8 @@ with col2:
                     failed_statscrape_list
                 st.info("To retry, redownload the data then scrape again.", icon="ℹ️")
 
-# This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session.
+### Session state handling
+# This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session. We must package it for session state and file export.
 st.session_state.upload_link_ref_str = '/'.join(upload_link.split('/')[4:6])
 scrape_details = {'route_list_type': st.session_state.list_type.lower(), 'username': st.session_state.upload_link_ref_str, 'date_scraped': date.today()}
 if st.session_state.list_type == "Ticks":
@@ -100,6 +104,7 @@ if st.session_state.list_type == "ToDos":
     full_scrape_output = st.session_state.todo_scrape_output
     uniq_df_output = st.session_state.df_usend_uniq_todos
 
+### Export
 st.markdown('---')
 st.header('3. Export')
 st.write("Save current route list for later or to use on your own")

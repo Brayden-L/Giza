@@ -37,4 +37,4 @@ session_state_init()
 
 st.title("Giza")
 st.header("Extended Rock Climbing Analytics")
-st.subheader("Build your tick pyramid and discover notable sends")
+st.subheader("Build Your Tick Pyramid")

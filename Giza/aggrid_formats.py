@@ -20,7 +20,7 @@ def aggrid_uniq_format(df_source):
     return df_pres, gb
 
 def aggrid_tick_format(df_source):
-    fulldat_orgcol_ticks = ['Route', 'Date Formatted', 'Pitches', 'Route Type', 'Rating', 'Avg Stars', 'Length', 'Num Ticks', 'Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Flash/Onsight', 'Worked Clean', 'Grade Breakthrough', 'Attempts', 'Location' ]
+    fulldat_orgcol_ticks = ['Route', 'Date Formatted', 'Pitches', 'Route Type', 'Style', 'Lead Style', 'Rating', 'Avg Stars', 'Length', 'Num Ticks', 'Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Flash/Onsight', 'Worked Clean', 'Grade Breakthrough', 'Attempts', 'Location' ]
     fulldat_floatcol_ticks = ['Lead Ratio', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio']
     df_source[fulldat_floatcol_ticks] = df_source[fulldat_floatcol_ticks].applymap(lambda x: float('{:,.2f}'.format(x)) if pd.notnull(x) else np.nan) # the if else here retains np.nans blank presentation
     df_source['Route'] = df_source.apply(lambda row: f"""<a target="_blank" href="{row['URL']}">{row['Route']}</a>""", axis=1)

@@ -459,16 +459,8 @@ def assign_spmp(df_source):
     df
         output df with new SP and MP tag column
     """
-    sp_bool = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1))
-    mp_bool = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] > 1))
-    if sp_bool is None:
-        df_source['SP'] = None
-    else:
-        df_source['SP'] = sp_bool.replace(False, None)
-    if mp_bool is None:
-        df_source['MP'] = None
-    else:
-        df_source['MP'] = mp_bool.replace(False, None)
+    df_source['SP'] = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1)).replace(False, None)
+    df_source['MP'] = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] > 1)).replace(False, None)
     return df_source
 
 # %%
@@ -768,7 +760,7 @@ def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrad
     df_high_lead = df_uniq_fil_r[(df_uniq_fil_r['Lead Ratio'] > 0.9) & (df_uniq_fil_r['Pitches'] == 1)].sort_values(by='Lead Ratio', ascending=False)
     # Low OS Ratio
     df_low_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
-    df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
+    df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.15)].sort_values(by='OS Ratio')
     # High OS Ratio
     df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
     df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
