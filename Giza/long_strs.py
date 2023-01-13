@@ -12,10 +12,13 @@ Giza enables three primary features that the Mountain Project does not.
 - **Mean Attempts to RP** : Positive float >=1. This is the mean of how many attempts it took for a successful redpoint from the population of climbers that were not able to onsight/flash the route, but eventually worked to a redpoint. It primarily signifies difficulty to redpoint. Few climbers are meticulous about logging their attempts, so the value of this metric is diminished. As a rough rule, low is <1.25, high is >2.00.
 - **Repeat Sender Ratio** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule, high is >1.25."""
 
-about_explainer = """**Summary**:  
-Giza is a data dashboard that enables a climber with extended analytics based on their existing tick and todo lists. Some examples of what a user can do:
+about_explainer = """
+Giza is intended to supplement [Mountain Project](https://www.mountainproject.com/) user tick list data to to provide additional data insights that are not available on the base website. The core inspiration was to provide a [climbing pyramid](https://bomberclimbing.com/blog/rock-climbing-pyramid/#:~:text=A%20climbing%20pyramid%20is%20a,some%20more%20attention%20or%20support.), which is a monumentally useful tool for gauging progression and outlining appropriate future objectives. The analytic possibilities enabled by the user generated data is vast, so there are many additional capabilities provided.
 
- - View a filterable [climbing pyramid](https://bomberclimbing.com/blog/rock-climbing-pyramid/#:~:text=A%20climbing%20pyramid%20is%20a,some%20more%20attention%20or%20support.) to gauge previous performance and aid in selection of future objectives.
+**Capability**:  
+Giza is a data dashboard that empowers a climber with extended analytics based on their existing tick and todo lists. Some examples of what a user can do:
+
+ - View a filterable climbing pyramid to gauge previous performance and aid in selection of future objectives.
  - Filter your todo list for climbs that are stout or soft for their grade.
  - Discover attributes about climbs and how they relate to your climbing ticks, such as an onsight of a notoriously tricky climb.
  - Look for hidden classics that the masses haven't yet caught onto, but a dedicated few seem to love.
@@ -29,8 +32,7 @@ Giza is a data dashboard that enables a climber with extended analytics based on
 - Routes with missing lengths are set to 70ft, boulders to 12ft.
 
 **Contact**:  
-Brayden Levy  
-Email: BraydenmLevy@gmail.com  
+Email: Braydenmlevy@gmail.com  
 Github: https://github.com/Brayden-L
 
 **Disclaimer**:  

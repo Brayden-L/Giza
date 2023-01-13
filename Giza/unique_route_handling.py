@@ -188,6 +188,7 @@ def data_standardize(df_source):
     # Change YDS-Vgrade combos to just Vgrade. They are most likely boulders, so a bouldering grade is relevant.
     subset = df_source['Rating'].apply(lambda row: [val for val in row.split() if val in V_GRADES_FULL]).astype(bool)  & df_source['Rating'].apply(lambda row: [val for val in row.split() if val in YDS_GRADES_FULL]).astype(bool) == True
     df_source.loc[subset, 'Rating'] = df_source[subset]['Rating'].apply(lambda x: x.split()[1])
+    df_source.loc[subset, 'Route Type'] = 'Boulder'
 
     # Seperate risk rating to new column
     if 'Rating' not in df_source.columns:
@@ -201,6 +202,9 @@ def data_standardize(df_source):
     # Create original rating and length archive to compare against or undo changes.
     if 'Original Rating' not in df_source.columns:
         df_source.insert(df_source.columns.get_loc('Rating'),'Original Rating',df_source['Rating'])
+        
+    # Your Stars NaN type is -1 for some reason, change it to an actual nonetype
+    df_source.loc[df_source['Your Stars'] == -1, 'Your Stars'] = None
 
     return df_source
 

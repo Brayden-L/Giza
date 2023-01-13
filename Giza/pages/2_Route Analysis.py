@@ -5,6 +5,7 @@ from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
 from long_strs import analysis_explainer
+from scipy import stats
 import os
 from pathlib import Path
 from datetime import date
@@ -181,6 +182,8 @@ if not unique_routes_df.empty:
         pitch_fil_sel = col1.multiselect(label=pitch_fil_widg_dict['label'],
                                                options=pitch_fil_widg_dict['options'],
                                                default=pitch_fil_widg_dict['default'])
+    pitch_fil_transf = {'Single Pitch': 'SP', 'Multi Pitch':'MP'}
+    pitch_fil_sel = [pitch_fil_transf[x] for x in pitch_fil_sel]
     # Date filter
     if anlist_type == "Ticks":
         date_min = user_ticks_df['Date'].min()
@@ -339,12 +342,8 @@ if not unique_routes_df.empty:
                                                  max_value=length_fil_widg_dict['max_value'],
                                                  value=length_fil_widg_dict['value'])
         
-    # Apply filters
-    if len(pitch_fil_sel) == 1:
-        if pitch_fil_sel[0] == 'Single Pitch':
-            df_uniq_fil = df_uniq_fil[df_uniq_fil['Pitches'] == 1]
-        if pitch_fil_sel[0] == 'Multi Pitch':
-            df_uniq_fil = df_uniq_fil[df_uniq_fil['Pitches'] > 1]
+    # Apply unique route filters
+    df_uniq_fil = df_uniq_fil[(df_uniq_fil['SP/MP'].isin(pitch_fil_sel)) | (df_uniq_fil['SP/MP'].isna())]
     if not loc_sel == '':
         df_uniq_fil = df_uniq_fil[df_uniq_fil['Location'].str.contains('|'.join(loc_sel))]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Route Type'].isin(routetype_fil)]
@@ -352,20 +351,17 @@ if not unique_routes_df.empty:
     df_uniq_fil = df_uniq_fil[(df_uniq_fil['Avg Stars'] >= star_fil_min) & (df_uniq_fil['Avg Stars'] <= star_fil_max)]
     df_uniq_fil = df_uniq_fil[(df_uniq_fil['Length'] >= length_fil_min) & (df_uniq_fil['Length'] <= length_fil_max)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
-    
+    # Apply tick filters
     if anlist_type == 'Ticks' and len(date_fil) == 2:
         if df_uniq_fil.empty:
             st.error("No Tick Results With Current Filter Settings")
         else:
+            # Initialize tick dataframe
             user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
             user_ticks_mf = user_ticks_merged.copy()
-            # Apply tick filters
             user_ticks_mf = flag_notable_ticks(user_ticks_mf)
-            if len(pitch_fil_sel) == 1:
-                if pitch_fil_sel[0] == 'Single Pitch':
-                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] == 1]
-                if pitch_fil_sel[0] == 'Multi Pitch':
-                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] > 1]
+            
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['SP/MP'].isin(pitch_fil_sel)) | user_ticks_mf['SP/MP'].isna()]
             if not loc_sel == '':
                 user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
             user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
@@ -377,43 +373,150 @@ if not unique_routes_df.empty:
             user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
             user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
     
-    ### Basic Plots
-    st.markdown('---')
-    st.markdown("##### Overview Plots")
-    if df_uniq_fil.empty:
-        st.error("No Results With Current Filter Settings")
-    else:
-        st.markdown('##### Pitch Count Pie Charts')
+    with st.expander("Overview Plots", expanded=True):
+        ### Basic Plots
+        # Pie Plots
+        pie_header_cont = st.container()
         col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
-        df_counts_routetype = df_uniq_fil.groupby('Route Type')['Pitches Ticked'].sum()
-        fig_pie_routetype = px.pie(values=df_counts_routetype.values, names=df_counts_routetype.index, color=df_counts_routetype.index, color_discrete_map={'Boulder':'#3CB371', 'Sport':'#C70039', 'Trad':'#4682B4'}, title='Climb Type', width=300, height=300)
-        fig_pie_routetype.update_layout(margin=dict(t=30, b=30, l=30, r=30))
-        fig_pie_routetype.update_traces(hole=.4)
-        col1.plotly_chart(fig_pie_routetype)
-        
-        df_counts_spmp = df_uniq_fil.groupby('SP/MP')['Pitches Ticked'].sum()
-        fig_pie_spmp = px.pie(values=df_counts_spmp.values, names=df_counts_spmp.index, color=df_counts_spmp.index, color_discrete_map={'SP':'#FFFAA0', 'MP':'#C70039'}, category_orders={}, title="Single or Multi Pitch", width=300, height=300)
-        fig_pie_spmp.update_layout(margin=dict(t=30, b=30, l=30, r=30))
-        fig_pie_spmp.update_traces(hole=.4)
-        col2.plotly_chart(fig_pie_spmp)
-        
-        df_counts_leadstyle = user_ticks_mf.groupby('Style')['Pitches Ticked'].sum()
-        fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values, names=df_counts_leadstyle.index, color=df_counts_leadstyle.index, color_discrete_map={'PG':'#FFFAA0', 'PG13':'#FF7F50', 'R':'#C70039', 'X':'black'}, title='Style', width=300, height=300)
-        fig_pie_leadstyle.update_layout(margin=dict(t=30, b=30, l=30, r=30))
-        fig_pie_leadstyle.update_traces(hole=.4)
-        col3.plotly_chart(fig_pie_leadstyle)
+        pie_chart_margin = dict(t=35, b=35, l=35, r=35)
+        if df_uniq_fil.empty:
+            st.error("No Results With Current Filter Settings")
+        else:
+            if anlist_type == 'Ticks' and len(date_fil) == 2:
+                pie_header_cont.markdown('##### Ticked Pitch Count Pie Charts')
+                pie_agg = 'Pitches Ticked'
+                df_counts_leadstyle = user_ticks_mff.groupby('Style')[pie_agg].sum()
+                fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values,
+                                        names=df_counts_leadstyle.index,
+                                        color=df_counts_leadstyle.index,
+                                        color_discrete_map={'Lead':'#9FC0DE', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#779ECC', 'Attempt':'#F2C894'},
+                                        title='Style',
+                                        width=300,
+                                        height=300)
+                fig_pie_leadstyle.update_layout(margin=pie_chart_margin)
+                fig_pie_leadstyle.update_traces(hole=.4)
+                col4.plotly_chart(fig_pie_leadstyle)
 
-        df_counts_leadstyle = user_ticks_mf.groupby('Lead Style')['Pitches Ticked'].sum()
-        fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values, names=df_counts_leadstyle.index, color=df_counts_leadstyle.index, color_discrete_map={'Fell/Hung':'+#A9A9A9', 'Redpoint':'#C70039', 'Pinkpoint':'#FFB6C1', 'Flash':'#3CB371', 'Onsight':'#32CD32'}, title='Lead Style', width=300, height=300)
-        fig_pie_leadstyle.update_layout(margin=dict(t=30, b=30, l=30, r=30))
-        fig_pie_leadstyle.update_traces(hole=.4)
-        col4.plotly_chart(fig_pie_leadstyle)
+                df_counts_leadstyle = user_ticks_mff.groupby('Lead Style')[pie_agg].sum()
+                fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values,
+                                        names=df_counts_leadstyle.index,
+                                        color=df_counts_leadstyle.index,
+                                        color_discrete_map={'Fell/Hung':'#779ECC', 'Redpoint':'#FF985A', 'Pinkpoint':'#FFB6C1', 'Flash':'#425356', 'Onsight':'#BAC9B4'},
+                                        title='Lead Style',
+                                        width=300,
+                                        height=300)
+                fig_pie_leadstyle.update_layout(margin=pie_chart_margin)
+                fig_pie_leadstyle.update_traces(hole=.4)
+                col5.plotly_chart(fig_pie_leadstyle)
 
-        df_counts_loc1 = df_uniq_fil.groupby(df_uniq_fil['Location'].apply(lambda x: x.split('>')[0]))['Pitches Ticked'].sum()
-        fig_pie_loc1 = px.pie(values=df_counts_loc1.values, names=df_counts_loc1.index, title='Base Location', width=300, height=300)
-        fig_pie_loc1.update_layout(margin=dict(t=30, b=30, l=30, r=30))
-        fig_pie_loc1.update_traces(hole=.4)
-        col5.plotly_chart(fig_pie_loc1)
+            if anlist_type == 'ToDos':
+                pie_header_cont.markdown('##### Pitch Count Pie Charts')
+                pie_agg = 'Pitches'
+
+            df_counts_routetype = df_uniq_fil.groupby('Route Type')[pie_agg].sum()
+            fig_pie_routetype = px.pie(values=df_counts_routetype.values,
+                                    names=df_counts_routetype.index,
+                                    color=df_counts_routetype.index,
+                                    color_discrete_map={'Boulder':'#BAC9B4', 'Sport':'#FF985A', 'Trad':'#779ECC'},
+                                    title='Climb Type',
+                                    width=300,
+                                    height=300)
+            fig_pie_routetype.update_layout(margin=pie_chart_margin)
+            fig_pie_routetype.update_traces(hole=.4)
+            col1.plotly_chart(fig_pie_routetype)
+            
+            df_counts_spmp = df_uniq_fil.groupby('SP/MP')[pie_agg].sum()
+            fig_pie_spmp = px.pie(values=df_counts_spmp.values,
+                                names=df_counts_spmp.index,
+                                color=df_counts_spmp.index,
+                                color_discrete_map={'SP':'#F2C894', 'MP':'#BAC9B4'},
+                                category_orders={},
+                                title="Single or Multi Pitch",
+                                width=300,
+                                height=300)
+            fig_pie_spmp.update_layout(margin=pie_chart_margin)
+            fig_pie_spmp.update_traces(hole=.4)
+            col2.plotly_chart(fig_pie_spmp)
+            
+            df_counts_loc1 = df_uniq_fil.groupby(df_uniq_fil['Location'].apply(lambda x: x.split('>')[0]))[pie_agg].sum()
+            fig_pie_loc1 = px.pie(values=df_counts_loc1.values,
+                                names=df_counts_loc1.index,
+                                color_discrete_sequence=px.colors.qualitative.Pastel2,
+                                title='Base Location',
+                                width=300,
+                                height=300)
+            fig_pie_loc1.update_layout(margin=pie_chart_margin)
+            fig_pie_loc1.update_traces(hole=.4)
+            col3.plotly_chart(fig_pie_loc1)
+        
+        st.markdown('---')
+        # Histograms
+        st.markdown('##### Histograms')
+        col1, col2 = st.columns([1,1])
+        fig_hist_rgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'],
+                                       x='Rating',
+                                       category_orders={'Rating': r_grade_fil},
+                                       marginal='box',
+                                       title='Route Grades')
+        fig_hist_rgrade.update_xaxes(type='category')
+        fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
+        col1.plotly_chart(fig_hist_rgrade)
+        fig_hist_bgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'],
+                                       x='Rating',
+                                       category_orders={'Rating': b_grade_fil},
+                                       marginal='box',
+                                       title='Boulder Grades')
+        fig_hist_bgrade.update_xaxes(type='category')
+        fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
+        col2.plotly_chart(fig_hist_bgrade)
+        fig_hist_mppitches = px.histogram(df_uniq_fil[df_uniq_fil['SP/MP']=='MP'],
+                                          x='Pitches',
+                                          marginal="box",
+                                          title='Multi Pitch Pitch Counts')
+        fig_hist_mppitches.update_traces(marker_color = '#779ECC')
+        col1.plotly_chart(fig_hist_mppitches)
+        fig_hist_length = px.histogram(df_uniq_fil,
+                                       x='Length',
+                                       marginal='box',
+                                       title=' Length')
+        fig_hist_length.update_traces(marker_color = '#FF985A')
+        fig_hist_length.update_layout(xaxis_title="Length (ft)")
+        col2.plotly_chart(fig_hist_length)
+        fig_hist_avgstars = px.histogram(df_uniq_fil,
+                                         x='Avg Stars',
+                                         marginal='box',
+                                         title='Stars')
+        fig_hist_avgstars.update_traces(marker_color='#ac7c5c')
+        col1.plotly_chart(fig_hist_avgstars)
+        fig_hist_numticks = px.histogram(df_uniq_fil,
+                                         x='Num Ticks',
+                                         marginal='box',
+                                         title='Number of Ticks')
+        fig_hist_numticks.update_traces(marker_color = '#BAC9B4')
+        col2.plotly_chart(fig_hist_numticks)
+        fig_hist_leadratio = px.histogram(df_uniq_fil,
+                                          x='Lead Ratio',
+                                          marginal='box',
+                                          title='Lead Ratio')
+        fig_hist_leadratio.update_traces(marker_color = '#779ECC')
+        col1.plotly_chart(fig_hist_leadratio)
+        fig_hist_osratio = px.histogram(df_uniq_fil,
+                                        x='OS Ratio',
+                                        marginal='box',
+                                        title='OS Ratio')
+        fig_hist_osratio.update_traces(marker_color = '#FF985A')
+        col2.plotly_chart(fig_hist_osratio)
+        fig_hist_repsend = px.histogram(df_uniq_fil,
+                                        x='Repeat Sender Ratio',
+                                        marginal='box',
+                                        title='Repeat Sender Ratio')
+        fig_hist_repsend.update_traces(marker_color='#ac7c5c')
+        col1.plotly_chart(fig_hist_repsend)
+        fig_hist_att2rp = px.histogram(df_uniq_fil, x='Mean Attempts To RP', marginal='box', title='Mean Attempts to RP')
+        fig_hist_att2rp.update_traces(marker_color = '#BAC9B4')
+        col2.plotly_chart(fig_hist_att2rp)
+
+
         
     ### Route analysis
     st.markdown('---')

@@ -22,7 +22,7 @@ def tick_merge(df_ticks, df_uniq):
         df_ticks.drop(columns=['Rating'], inplace=True)
     if 'Length' in df_ticks.columns:
         df_ticks.drop(columns=['Length'], inplace=True)
-    df_out = df_ticks.merge(df_uniq[['Route ID', 'Pitches', 'Lead Ratio', 'Num Ticks', 'Num Tickers', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Rating', 'Length']], how='left', on='Route ID')
+    df_out = df_ticks.merge(df_uniq[['Route ID', 'Pitches', 'Lead Ratio', 'Num Ticks', 'Num Tickers', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Rating', 'Length', 'SP/MP']], how='left', on='Route ID')
     return df_out
 
 def flag_notable_ticks(df_source):
@@ -102,19 +102,19 @@ def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgr
 
     fig1 = px.bar(df_clean_sends_r, y="Rating", orientation='h', height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
     fig1.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Routes Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig1.update_traces(marker_color='#7A4F25', marker_line_width=2, marker_line_color='white', textposition="inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    fig1.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
     fig2 = px.scatter(df_clean_sends_r, "Date", "Rating", height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
     fig2.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig2.update_traces(marker_symbol='square', marker_color='#7A4F25', marker_size=25, marker_line_width=2, marker_line_color='black', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    fig2.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
     fig3 = px.bar(df_clean_sends_b, y="Rating", orientation='h', height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
     fig3.update_layout(font={'family':'Courier New', 'color':'black', 'size':18}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Problems Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig3.update_traces(marker_color='#7A4F25', marker_line_width=2, marker_line_color='white', textposition="inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    fig3.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
     fig4 = px.scatter(df_clean_sends_b, "Date", "Rating", height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
     fig4.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig4.update_traces(marker_symbol='square', marker_color='#7A4F25', marker_size=25, marker_line_width=2, marker_line_color='black', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    fig4.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
     return fig1, fig2, fig3, fig4
 
