@@ -2,6 +2,7 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
 import streamlit_nested_layout
 from unique_route_handling import *
+from long_strs import scrape_explainer
 from datetime import date
 import json
 
@@ -12,9 +13,12 @@ def disable_buttons():
     st.session_state.exp_button_state = True
     st.session_state.df_usend_uniq = pd.DataFrame()
 
-### Download
 st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
-st.header('Select Route List Type')
+with st.expander('✋ Help ✋'):
+    st.markdown(scrape_explainer, unsafe_allow_html=True)
+
+### Download
+st.header('1. Select Route List Type')
 list_type_options = ["Ticks", "ToDos"]
 st.session_state.list_type = st.radio("List Type", 
                                     options=list_type_options,
@@ -24,7 +28,7 @@ st.session_state.list_type = st.radio("List Type",
                                     help="Ticks is a list of routes the user has climbed, ToDos is a list of routes the user would like to climb.")
 col1, col2, col3 = st.columns([1,1,1])
 with col1:
-    st.header('1. Download')
+    st.header('2. Download')
     st.write("Link to a user profile")
     upload_link = st.text_input("Climber Profile Link", 
                                 value='https://www.mountainproject.com/user/200554494/amity-warme',
@@ -53,7 +57,7 @@ with col1:
 
 ### Scrape
 with col2:
-    st.header('2. Scrape')
+    st.header('3. Scrape')
     st.write("Download and extract route information")
     numrows = len(st.session_state.df_usend_uniq.index)
     if numrows:
@@ -106,7 +110,7 @@ if st.session_state.list_type == "ToDos":
 
 ### Export
 st.markdown('---')
-st.header('3. Export')
+st.header('4. Export')
 st.write("Save current route list for later or to use on your own")
 st.download_button(
     label=f"Download {st.session_state.list_type}.PKL File For Giza",

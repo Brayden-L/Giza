@@ -769,8 +769,8 @@ def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrad
     df_low_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] < 0.35)].sort_values(by='OS Ratio')
     df_low_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] < 0.15)].sort_values(by='OS Ratio')
     # High OS Ratio
-    df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
-    df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.8)].sort_values(by='OS Ratio', ascending=False)
+    df_high_OS_r = df_uniq_fil_r[(df_uniq_fil_r['OS Ratio'] > 0.9)].sort_values(by='OS Ratio', ascending=False)
+    df_high_OS_b = df_uniq_fil_b[(df_uniq_fil_b['OS Ratio'] > 0.7)].sort_values(by='OS Ratio', ascending=False)
     # N superlative OS Ratio by Grade
     def nsuperlative_os(data, rgrade_array, direction, numN):
         outlist = []
@@ -785,5 +785,10 @@ def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrad
     df_nhigh_OS_r = nsuperlative_os(df_source, selected_rgrade_array, 'highest', numN)
     df_nlow_OS_b = nsuperlative_os(df_source, selected_bgrade_array, 'lowest', numN)
     df_nhigh_OS_b = nsuperlative_os(df_source, selected_bgrade_array, 'highest', numN)
+    # High RP attempts
+    df_high_RPA_r = df_uniq_fil_r[df_uniq_fil_r['Mean Attempts To RP'] > 1.8].sort_values(by='Mean Attempts To RP', ascending=False)
+    # Popular Repeated Route
+    df_high_RSR_r = df_uniq_fil_r[df_uniq_fil_r['Repeat Sender Ratio'] > 1.2].sort_values(by='Repeat Sender Ratio', ascending=False)
+    df_high_RSR_b = df_uniq_fil_b[df_uniq_fil_b['Repeat Sender Ratio'] > 1.05].sort_values(by='Repeat Sender Ratio', ascending=False)
     
-    return df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b
+    return df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b, df_high_RPA_r, df_high_RSR_r, df_high_RSR_b

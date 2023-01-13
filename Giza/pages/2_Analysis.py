@@ -5,12 +5,10 @@ from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
 from long_strs import analysis_explainer
-from scipy import stats
 import os
 from pathlib import Path
 from datetime import date
 from dateutil.relativedelta import relativedelta 
-from itertools import compress
 import pickle
 
 ### Setup
@@ -22,7 +20,7 @@ st.title("Tick Analysis")
 st.subheader("Explore Your Ticks and Discover Notable Sends")
 st.markdown('---')
 with st.expander('✋ Help ✋'):
-    st.markdown(analysis_explainer)
+    st.markdown(analysis_explainer, unsafe_allow_html=True)
 
 ### Dataset Selection
 col1, col2, col3 = st.columns([1.5,0.25,1.25])
@@ -249,7 +247,7 @@ if not unique_routes_df.empty:
                           'min_value': 1,
                           'max_value': loc_max_tier,
                           'value': 1,
-                          'help': 'Location Tier describes how "deep" the location filter goes. Tier1 is typically a state, Tier2 is typically a geographic area or major destination, Tier3 is typically a sub-area, Tier4 and further typically denote crags and subcrags.'}
+                          'help': 'Location Tier describes how "deep" the location filter goes. Tier1 is typically a state, Tier2 is typically a geographic area or major destination, Tier3 is typically a sub-area, Tier4 and further typically denote crags and subcrags. It is important to note that between major areas these tiers do not often line up.'}
     if move_fil == True:
         loc_tier = st.sidebar.number_input(label=loc_tier_widg_dict['label'],
                                            min_value=loc_tier_widg_dict['min_value'],
@@ -373,6 +371,7 @@ if not unique_routes_df.empty:
             user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
             user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
     
+    st.markdown('---')
     with st.expander("Overview Plots", expanded=True):
         ### Basic Plots
         # Pie Plots
@@ -389,7 +388,7 @@ if not unique_routes_df.empty:
                 fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values,
                                         names=df_counts_leadstyle.index,
                                         color=df_counts_leadstyle.index,
-                                        color_discrete_map={'Lead':'#9FC0DE', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#779ECC', 'Attempt':'#F2C894'},
+                                        color_discrete_map={'Lead':'#779ECC', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#9FC0DE', 'Attempt':'#F2C894'},
                                         title='Style',
                                         width=300,
                                         height=300)
@@ -453,22 +452,46 @@ if not unique_routes_df.empty:
         # Histograms
         st.markdown('##### Histograms')
         col1, col2 = st.columns([1,1])
-        fig_hist_rgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'],
-                                       x='Rating',
-                                       category_orders={'Rating': r_grade_fil},
-                                       marginal='box',
-                                       title='Route Grades')
-        fig_hist_rgrade.update_xaxes(type='category')
-        fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
-        col1.plotly_chart(fig_hist_rgrade)
-        fig_hist_bgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'],
-                                       x='Rating',
-                                       category_orders={'Rating': b_grade_fil},
-                                       marginal='box',
-                                       title='Boulder Grades')
-        fig_hist_bgrade.update_xaxes(type='category')
-        fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
-        col2.plotly_chart(fig_hist_bgrade)
+        if anlist_type == 'Ticks':
+            fig_hist_rgrade = px.histogram(user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby('Rating', as_index=False, observed=True).sum(),
+                                        x='Rating',
+                                        y='Pitches',
+                                        category_orders={'Rating': r_grade_fil},
+                                        marginal='box',
+                                        title='Route Grades',
+                                        text_auto=True)
+            fig_hist_rgrade.update_xaxes(type='category')
+            fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
+            col1.plotly_chart(fig_hist_rgrade)
+            fig_hist_bgrade = px.histogram(user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby('Rating', as_index=False, observed=True)['Pitches'].sum(),
+                                        x='Rating',
+                                        y='Pitches',
+                                        category_orders={'Rating': b_grade_fil},
+                                        marginal='box',
+                                        title='Boulder Grades',
+                                        text_auto=True)
+            fig_hist_bgrade.update_xaxes(type='category')
+            fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
+            col2.plotly_chart(fig_hist_bgrade)
+        if anlist_type == 'ToDos':
+            fig_hist_rgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'],
+                                        x='Rating',
+                                        category_orders={'Rating': r_grade_fil},
+                                        marginal='box',
+                                        title='Route Grades',
+                                        text_auto=True)
+            fig_hist_rgrade.update_xaxes(type='category')
+            fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
+            col1.plotly_chart(fig_hist_rgrade)
+            fig_hist_bgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'],
+                                        x='Rating',
+                                        category_orders={'Rating': b_grade_fil},
+                                        marginal='box',
+                                        title='Boulder Grades',
+                                        text_auto=True)
+            fig_hist_bgrade.update_xaxes(type='category')
+            fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
+            col2.plotly_chart(fig_hist_bgrade)
         fig_hist_mppitches = px.histogram(df_uniq_fil[df_uniq_fil['SP/MP']=='MP'],
                                           x='Pitches',
                                           marginal="box",
@@ -527,8 +550,8 @@ if not unique_routes_df.empty:
         with st.expander("Prefabricated Route Analysis"):
             col1, col2, col3 = st.columns([1,3,1])
             analysis_route_type_option = col1.radio("Route Type", options=['Routes', 'Boulders'], horizontal=True)
-            analysis_options_r = ['Rarely Led Routes', 'Rarely Toproped Routes', 'Commonly Onsighted Routes', 'Rarely Onsighted Routes', 'N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade']
-            analysis_options_b = ['Commonly Onsighted Boulders', 'Rarely Onsighted Boulders', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade']
+            analysis_options_r = ['Rarely Led Routes', 'Rarely Toproped Routes', 'Commonly Onsighted Routes', 'Rarely Onsighted Routes', 'N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade', 'Hard to Redpoint', 'Popular To Repeat Send']
+            analysis_options_b = ['Commonly Onsighted Boulders', 'Rarely Onsighted Boulders', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade', 'Popular To Repeat Send']
             if analysis_route_type_option == 'Routes':
                 analysis_options = analysis_options_r
             if analysis_route_type_option == 'Boulders':
@@ -537,12 +560,12 @@ if not unique_routes_df.empty:
             numN=1
             if analysis_sel in ['N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade']:
                 numN = col3.number_input("N =", min_value=1, value=3)
-            df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b = unique_route_prefabanalysis(df_uniq_fil, selected_rgrade_array, selected_bgrade_array, numN)
+            df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b, df_high_RSA_r, df_high_RSR_r, df_high_RSR_b = unique_route_prefabanalysis(df_uniq_fil, selected_rgrade_array, selected_bgrade_array, numN)
             
             if analysis_route_type_option == 'Routes':
-                analysis_datasets = [df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r]
+                analysis_datasets = [df_low_lead, df_high_lead, df_high_OS_r, df_low_OS_r, df_nlow_OS_r, df_nhigh_OS_r, df_high_RSA_r, df_high_RSR_r]
             if analysis_route_type_option == 'Boulders':
-                analysis_datasets = [df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b]
+                analysis_datasets = [df_high_OS_b, df_low_OS_b, df_nlow_OS_b, df_nhigh_OS_b, df_high_RSR_b]
             
             analysis_dict = dict(zip(analysis_options, analysis_datasets))
             df_uniq_prefab_pres, gb = aggrid_uniq_format(analysis_dict[analysis_sel])
@@ -569,7 +592,8 @@ if not unique_routes_df.empty:
         else:
             st.markdown('---')
             st.markdown("##### Tick Analysis")
-            with st.expander("Tick Pyramid Plots"):
+            with st.expander("Tick Pyramid Plots", expanded=True):
+                st.markdown('**Note**: These plots only count "sent" routes. Number of attempts to send is recorded inside the block.')
                 col1, col2, col3 = st.columns([1,2,5])
                 pyr_plot_type_sel = col1.radio("Plot Type Selection", options=['Routes', 'Boulders'])
                 col2.write("#")
@@ -584,13 +608,18 @@ if not unique_routes_df.empty:
                 if pyr_plot_type_sel =='Boulders':
                     st.plotly_chart(bpyrplot, theme=None, use_container_width=True)
                     st.plotly_chart(btimeplot, theme=None, use_container_width=True)
-
-            with st.expander("Notable Sends"):
+                    
+            with st.expander("Tick Report", expanded=True):
+                fig_breakthrough = px.line(user_ticks_mff[user_ticks_mff['Grade Breakthrough']==True], x='Date', y='Rating', category_orders={'Rating': r_grade_fil[::-1]})
+                fig_breakthrough.update_yaxes(type='category')
+                st.plotly_chart(fig_breakthrough)
+                # Notable Sends
                 df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff)
                 if all([df_bold_leads.empty, df_impressive_OS.empty, df_woops_falls.empty]):
                     st.error("No particularly notable sends, get out there!")
                 if not df_bold_leads.empty:
-                    st.markdown("##### [Led route with low lead ratio] | While others opted for the top rope, you faced the sharp end.")
+                    st.markdown("""##### [Led route with low lead ratio]
+                                While others opted for the top rope, you faced the sharp end.""")
                     df_bold_leads_pres, gb = aggrid_tick_format(df_bold_leads)
                     AgGrid(data=df_bold_leads_pres, 
                         theme='balham',
@@ -599,7 +628,8 @@ if not unique_routes_df.empty:
                     st.text('')
                 st.markdown('---')
                 if not df_impressive_OS.empty:
-                    st.markdown("##### [OS'd route with low OS ratio] | Few others managed to nab the OS/Flash, but you did.")
+                    st.markdown("""##### [Onsighted or Flashed route with low OS ratio]  
+                                Few others managed to nab the OS/Flash, but you did.""")
                     df_impressive_OS_pres, gb = aggrid_tick_format(df_impressive_OS)
                     AgGrid(data=df_impressive_OS_pres, 
                         theme='balham',
@@ -608,7 +638,8 @@ if not unique_routes_df.empty:
                     st.text('')
                 st.markdown('---')
                 if not df_woops_falls.empty:
-                    st.markdown("##### [Fell/hung route with high OS ratio] | We all fall, but these were your most agregious slip ups.")
+                    st.markdown("""##### [Fell/Hung route with high OS ratio]
+                                We all fall, but these were your most agregious slip ups.""")
                     df_woops_falls_pres, gb = aggrid_tick_format(df_woops_falls)
                     AgGrid(data=df_woops_falls_pres, 
                         theme='balham',
@@ -623,10 +654,3 @@ if not unique_routes_df.empty:
                     theme='balham',
                     gridOptions=gb.build(),
                     allow_unsafe_jscode=True)
-    
-    ### EDA
-    if df_uniq_fil.empty:
-        st.error("No Tick Results With Current Filter Settings")
-    else:
-        st.markdown('---')
-        st.markdown("##### Full Exploratory Data Analysis")

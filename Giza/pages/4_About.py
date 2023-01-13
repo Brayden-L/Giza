@@ -8,4 +8,4 @@ st.set_page_config(layout="wide")
 st.markdown(blue_gradient_bg_img, unsafe_allow_html=True)
 
 st.header('About')
-st.markdown(about_explainer)
+st.markdown(about_explainer, unsafe_allow_html=True)
