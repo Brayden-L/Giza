@@ -20,6 +20,14 @@ Giza is a data dashboard that enables a climber with extended analytics based on
  - Discover attributes about climbs and how they relate to your climbing ticks, such as an onsight of a notoriously tricky climb.
  - Look for hidden classics that the masses haven't yet caught onto, but a dedicated few seem to love.
 
+**Underlying Details**:
+- Giza removes all routes of type aid, ice and snow as analytics for those types of climbs are less meaningful and more difficult to weave into the more standard styles of sport, trad and boulder.
+- The best data is gathered from a user who ticks every climb and every attempt.
+- A single pitch fell/hung tick with multiple pitches is considered as many attempts as ticked pitches. Similarly a single pitch redpoint with multiple ticked pitches is considered N-1 failed attempts and a successful redpoint.
+- An unavoidable side effect of the previous assumption is that single pitch climbs broken into multiple pitches is incorrectly assumed to be multiple attempts. This should happen rarely because you're a crusher and you should send the full pitch anyway.
+- Multipitch climbs only "count" as a single climb of the overall grade of the climb. This ignores the grade and style of the other pitches. For example a multipitch with 2 pitches of 4th class climbing and a single 5.11+ pitch is given the same value as a 12 pitch climb with every pitch at 5.11+.  This is a limitation of the source data.
+- Routes with missing lengths are set to 70ft, boulders to 12ft.
+
 **Contact**:  
 Brayden Levy  
 Email: BraydenmLevy@gmail.com  

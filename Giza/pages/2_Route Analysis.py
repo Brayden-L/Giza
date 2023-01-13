@@ -5,7 +5,6 @@ from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
 from long_strs import analysis_explainer
-import ast
 import os
 from pathlib import Path
 from datetime import date
@@ -21,7 +20,7 @@ unique_routes_df = pd.DataFrame()
 st.title("Tick Analysis")
 st.subheader("Explore Your Ticks and Discover Notable Sends")
 st.markdown('---')
-with st.expander('Details'):
+with st.expander('✋ Help ✋'):
     st.markdown(analysis_explainer)
 
 ### Dataset Selection
@@ -98,18 +97,20 @@ if not unique_routes_df.empty:
     
     ### Filtering
     # Filter widget setup
-    # Enabling the filters to be moved to the sidebar makes the code much less readable but I think it is worth it
+    # Enabling the filters to be moved to the sidebar makes the code much less readable but I think it is worth it. I'm not super happy with the overall flow of the code.
     st.header("Filtering")
     move_fil = st.checkbox("Move Filter to Sidebar", help="Filters in the sidebar remove the need to scroll back and forth if you will be tweaking the filter settings a lot. This is at the expense of cramped visuals.")
     df_uniq_fil = unique_routes_df.copy()
     
+    # Routetype and tick filter
     col1, col2, col3 = st.columns([1.75,0.25,2.75])
     routetype_options = df_uniq_fil['Route Type'].unique().tolist()
     routetype_fil_widg_dict = {'label': "Climb Type",
                                'options': routetype_options,
                                'default': routetype_options} 
     numtick_fil_widg_dict = {'label': "Minimum Tick Count Cutoff", 
-                            'min_value': 1, 'value': 30,
+                            'min_value': 1,
+                            'value': 30,
                             'help': "Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff"}
     if move_fil == True:
         numtick_fil = st.sidebar.number_input(label=numtick_fil_widg_dict['label'],
@@ -128,6 +129,7 @@ if not unique_routes_df.empty:
                                          options=routetype_fil_widg_dict['options'],
                                          default=routetype_fil_widg_dict['default'])
 
+    # Grade filter
     def grade_filter_align(datalist, orderedlist):
         full_list = [i for i in orderedlist if i in datalist['Rating'].unique()]
         minval = full_list[0]
@@ -166,11 +168,11 @@ if not unique_routes_df.empty:
             b_grade_fil = selected_bgrade_array[selected_bgrade_array.index(b_grade_min) : selected_bgrade_array.index(b_grade_max)+1]
     all_grade_fil = r_grade_fil + b_grade_fil
 
+    # Single pitch or multi pitch filter
     col1, col2, col3, col4 = st.columns([1.75,0.25,0.5,2.25])
     pitch_fil_widg_dict = {'label': "Pitch Type", 
                            'options': ['Single Pitch', 'Multi Pitch'],
                            'default': ['Single Pitch', 'Multi Pitch']}
-    
     if move_fil == True:
         pitch_fil_sel = st.sidebar.multiselect(label=pitch_fil_widg_dict['label'],
                                                options=pitch_fil_widg_dict['options'],
@@ -179,21 +181,25 @@ if not unique_routes_df.empty:
         pitch_fil_sel = col1.multiselect(label=pitch_fil_widg_dict['label'],
                                                options=pitch_fil_widg_dict['options'],
                                                default=pitch_fil_widg_dict['default'])
+    # Date filter
     if anlist_type == "Ticks":
         date_min = user_ticks_df['Date'].min()
         date_max = user_ticks_df['Date'].max()
         date_fil_type_widg_dict = {'label': "Date Filter Type",
-                               'options': ['Date Range', 'Quick Filter']}
+                                   'options': ['Date Range', 'Quick Filter'],
+                                   'index': 1}
         date_fil_widg_dict = {'label': "Date Filter",
                              'value': (date_min, date_max), 
                             'min_value': date_min,
                             'max_value': date_max}
         if move_fil == True:
             date_fil_type = st.sidebar.radio(label=date_fil_type_widg_dict['label'],
-                                             options=date_fil_type_widg_dict['options'])
+                                             options=date_fil_type_widg_dict['options'],
+                                             index=date_fil_type_widg_dict['index'])
         if move_fil == False:
             date_fil_type = col3.radio(label=date_fil_type_widg_dict['label'],
-                                       options=date_fil_type_widg_dict['options'])
+                                       options=date_fil_type_widg_dict['options'],
+                                       index=date_fil_type_widg_dict['index'])
         if date_fil_type == 'Date Range':
             if move_fil == True:
                 date_fil = st.sidebar.date_input(label=date_fil_widg_dict['label'],
@@ -233,6 +239,7 @@ if not unique_routes_df.empty:
                 if qdate_fil == f'Calendar Year: {str(year)}':
                     date_fil = pd.to_datetime((date(year, 1, 1), date(year, 12, 31)))
     
+    # Location filter
     col1, col2 = st.columns([0.3, 4])
     loc_max_tier = df_uniq_fil['Location'].apply(lambda x: len(x.split('>'))).max()           
     loc_tier_widg_dict = {'label': "Location Tier",
@@ -264,8 +271,8 @@ if not unique_routes_df.empty:
                                    options=location_list_widg_dict['options'])
     
     col1, col2, col3 = st.columns([1.75,0.25,2.75])
-    
     if anlist_type == "Ticks":
+        # Style filter
         style_options = user_ticks_df['Style'].unique().tolist()
         style_fil_widg_dict = {'label': 'Style',
                             'options': style_options,
@@ -281,9 +288,9 @@ if not unique_routes_df.empty:
                                          options=style_fil_widg_dict['options'],
                                          default=style_fil_widg_dict['default'],
                                          help=style_fil_widg_dict['help'])
-        
+        # Lead style filter
         lead_style_list = user_ticks_df['Lead Style'].unique().tolist()
-        lead_style_fil_widg_dict = {'label': 'LEad Style',
+        lead_style_fil_widg_dict = {'label': 'Lead Style',
                             'options': lead_style_list,
                             'default': lead_style_list,
                             'help': '"nan" is default for non-lead styles such as TR, follow, and all boulders'}
@@ -298,6 +305,7 @@ if not unique_routes_df.empty:
                                               default=lead_style_fil_widg_dict['default'],
                                               help=lead_style_fil_widg_dict['help'])
     
+    # Star filter
     min_stars, max_stars = float(df_uniq_fil['Avg Stars'].min()), float(df_uniq_fil['Avg Stars'].max())
     star_fil_widg_dict = {'label': 'Avg Stars',
                           'min_value': min_stars,
@@ -314,6 +322,7 @@ if not unique_routes_df.empty:
                                                  max_value=star_fil_widg_dict['max_value'],
                                                  value=star_fil_widg_dict['value'])
     
+    # Length filter
     min_length, max_length = float(df_uniq_fil['Length'].min()), float(df_uniq_fil['Length'].max())
     length_fil_widg_dict = {'label': 'Length',
                           'min_value': min_length,
@@ -329,7 +338,7 @@ if not unique_routes_df.empty:
                                                  min_value=length_fil_widg_dict['min_value'],
                                                  max_value=length_fil_widg_dict['max_value'],
                                                  value=length_fil_widg_dict['value'])
-
+        
     # Apply filters
     if len(pitch_fil_sel) == 1:
         if pitch_fil_sel[0] == 'Single Pitch':
@@ -344,6 +353,68 @@ if not unique_routes_df.empty:
     df_uniq_fil = df_uniq_fil[(df_uniq_fil['Length'] >= length_fil_min) & (df_uniq_fil['Length'] <= length_fil_max)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
     
+    if anlist_type == 'Ticks' and len(date_fil) == 2:
+        if df_uniq_fil.empty:
+            st.error("No Tick Results With Current Filter Settings")
+        else:
+            user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
+            user_ticks_mf = user_ticks_merged.copy()
+            # Apply tick filters
+            user_ticks_mf = flag_notable_ticks(user_ticks_mf)
+            if len(pitch_fil_sel) == 1:
+                if pitch_fil_sel[0] == 'Single Pitch':
+                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] == 1]
+                if pitch_fil_sel[0] == 'Multi Pitch':
+                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] > 1]
+            if not loc_sel == '':
+                user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Avg Stars'] >= star_fil_min) & (user_ticks_mf['Avg Stars'] <= star_fil_max)]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Length'] >= length_fil_min) & (user_ticks_mf['Length'] <= length_fil_max)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Style'].isin(style_fil)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
+            user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
+    
+    ### Basic Plots
+    st.markdown('---')
+    st.markdown("##### Overview Plots")
+    if df_uniq_fil.empty:
+        st.error("No Results With Current Filter Settings")
+    else:
+        st.markdown('##### Pitch Count Pie Charts')
+        col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
+        df_counts_routetype = df_uniq_fil.groupby('Route Type')['Pitches Ticked'].sum()
+        fig_pie_routetype = px.pie(values=df_counts_routetype.values, names=df_counts_routetype.index, color=df_counts_routetype.index, color_discrete_map={'Boulder':'#3CB371', 'Sport':'#C70039', 'Trad':'#4682B4'}, title='Climb Type', width=300, height=300)
+        fig_pie_routetype.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+        fig_pie_routetype.update_traces(hole=.4)
+        col1.plotly_chart(fig_pie_routetype)
+        
+        df_counts_spmp = df_uniq_fil.groupby('SP/MP')['Pitches Ticked'].sum()
+        fig_pie_spmp = px.pie(values=df_counts_spmp.values, names=df_counts_spmp.index, color=df_counts_spmp.index, color_discrete_map={'SP':'#FFFAA0', 'MP':'#C70039'}, category_orders={}, title="Single or Multi Pitch", width=300, height=300)
+        fig_pie_spmp.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+        fig_pie_spmp.update_traces(hole=.4)
+        col2.plotly_chart(fig_pie_spmp)
+        
+        df_counts_leadstyle = user_ticks_mf.groupby('Style')['Pitches Ticked'].sum()
+        fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values, names=df_counts_leadstyle.index, color=df_counts_leadstyle.index, color_discrete_map={'PG':'#FFFAA0', 'PG13':'#FF7F50', 'R':'#C70039', 'X':'black'}, title='Style', width=300, height=300)
+        fig_pie_leadstyle.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+        fig_pie_leadstyle.update_traces(hole=.4)
+        col3.plotly_chart(fig_pie_leadstyle)
+
+        df_counts_leadstyle = user_ticks_mf.groupby('Lead Style')['Pitches Ticked'].sum()
+        fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values, names=df_counts_leadstyle.index, color=df_counts_leadstyle.index, color_discrete_map={'Fell/Hung':'+#A9A9A9', 'Redpoint':'#C70039', 'Pinkpoint':'#FFB6C1', 'Flash':'#3CB371', 'Onsight':'#32CD32'}, title='Lead Style', width=300, height=300)
+        fig_pie_leadstyle.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+        fig_pie_leadstyle.update_traces(hole=.4)
+        col4.plotly_chart(fig_pie_leadstyle)
+
+        df_counts_loc1 = df_uniq_fil.groupby(df_uniq_fil['Location'].apply(lambda x: x.split('>')[0]))['Pitches Ticked'].sum()
+        fig_pie_loc1 = px.pie(values=df_counts_loc1.values, names=df_counts_loc1.index, title='Base Location', width=300, height=300)
+        fig_pie_loc1.update_layout(margin=dict(t=30, b=30, l=30, r=30))
+        fig_pie_loc1.update_traces(hole=.4)
+        col5.plotly_chart(fig_pie_loc1)
+        
     ### Route analysis
     st.markdown('---')
     st.markdown("##### Route Analysis")
@@ -389,31 +460,12 @@ if not unique_routes_df.empty:
                 allow_unsafe_jscode=True, key="Full Data: Routes")
     
     ### Tick analysis
-    st.markdown('---')
-    st.markdown("##### Tick Analysis")
-    if df_uniq_fil.empty:
-        st.error("No Tick Results With Current Filter Settings")
-    else:
-        if anlist_type == 'Ticks' and len(date_fil) == 2:
-            user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
-            user_ticks_mf = user_ticks_merged.copy()
-            # Apply tick filters
-            user_ticks_mf = flag_notable_ticks(user_ticks_mf)
-            if len(pitch_fil_sel) == 1:
-                if pitch_fil_sel[0] == 'Single Pitch':
-                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] == 1]
-                if pitch_fil_sel[0] == 'Multi Pitch':
-                    user_ticks_mf = user_ticks_mf[user_ticks_mf['Pitches'] > 1]
-            if not loc_sel == '':
-                user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Avg Stars'] >= star_fil_min) & (user_ticks_mf['Avg Stars'] <= star_fil_max)]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Length'] >= length_fil_min) & (user_ticks_mf['Length'] <= length_fil_max)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Style'].isin(style_fil)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
-            user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
+    if anlist_type == 'Ticks' and len(date_fil) == 2:
+        if df_uniq_fil.empty:
+            st.error("No Tick Results With Current Filter Settings")
+        else:
+            st.markdown('---')
+            st.markdown("##### Tick Analysis")
             with st.expander("Tick Pyramid Plots"):
                 col1, col2, col3 = st.columns([1,2,5])
                 pyr_plot_type_sel = col1.radio("Plot Type Selection", options=['Routes', 'Boulders'])
@@ -470,9 +522,8 @@ if not unique_routes_df.empty:
                     allow_unsafe_jscode=True)
     
     ### EDA
-    st.markdown('---')
-    st.markdown("##### Full Exploratory Data Analysis")
-    if user_ticks_mff.empty:
-        st.error("No EDA Results With Current Filter Settings")
+    if df_uniq_fil.empty:
+        st.error("No Tick Results With Current Filter Settings")
     else:
-        pass
+        st.markdown('---')
+        st.markdown("##### Full Exploratory Data Analysis")

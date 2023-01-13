@@ -459,8 +459,11 @@ def assign_spmp(df_source):
     df
         output df with new SP and MP tag column
     """
-    df_source['SP'] = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1)).replace(False, None)
-    df_source['MP'] = ((df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] > 1)).replace(False, None)
+    if 'SP/MP' not in df_source.columns:
+        df_source['SP/MP'] = None
+    df_source.loc[(df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1), 'SP/MP'] = 'SP'
+    df_source.loc[(df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] > 1), 'SP/MP'] = 'MP'
+    df_source['SP/MP'] = pd.Categorical(df_source['SP/MP'])
     return df_source
 
 # %%
