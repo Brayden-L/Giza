@@ -205,6 +205,11 @@ def data_standardize(df_source):
         
     # Your Stars NaN type is -1 for some reason, change it to an actual nonetype
     df_source.loc[df_source['Your Stars'] == -1, 'Your Stars'] = None
+    
+    # Base Location is a useful column
+    if 'Base Location' not in df_source.columns:
+        df_source.insert(len(df_source.columns),'Base Location','')
+    df_source['Base Location'] = df_source['Location'].apply(lambda x: x.split('>')[0])
 
     return df_source
 

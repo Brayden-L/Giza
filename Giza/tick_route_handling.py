@@ -124,5 +124,5 @@ def tick_report(df_source):
     # User onsighted something rarely onsighted
     df_impressive_OS = df_source[(df_source['OS Ratio'] < 0.35) & (df_source['Flash/Onsight'] == True) & (df_source['Route Type'] != 'Boulder')].sort_values(by='OS Ratio')
     # User fell on something rarely fallen on
-    df_woops_falls = df_source[(df_source['OS Ratio'] > 0.8) & (df_source['Style'] == 'Lead') & (df_source['Lead Style'] == 'Fell/Hung') & (df_source['Route Type'] != 'Boulder')].sort_values(by='OS Ratio')
+    df_woops_falls = df_source[(df_source['OS Ratio'] > 0.8) & (df_source['Style'] == 'Lead') & (df_source['Lead Style'] == 'Fell/Hung') & (df_source['Route Type'] != 'Boulder')].sort_values(by='OS Ratio', ascending=True)
     return df_bold_leads, df_impressive_OS, df_woops_falls

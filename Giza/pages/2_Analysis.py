@@ -26,14 +26,15 @@ with st.expander('✋ Help ✋'):
 col1, col2, col3 = st.columns([1.5,0.25,1.25])
 col1.header('Dataset Selection')
 anlist_type = col1.radio("List Type", options=["Ticks", "ToDos"], horizontal=True)
-data_source_type_selections = ['Select Provided Dataset', 'Upload Pickle File']
+data_source_type_selections = ['Use Session Dataset', 'Select Provided Dataset', 'Upload Pickle File']
 if anlist_type == 'Ticks':
-    if not st.session_state.df_usend_uniq_ticks.empty:
-        data_source_type_selections.insert(0, 'Use Session Dataset')
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
-        unique_routes_df, import_details, user_ticks_df = st.session_state.tick_scrape_output
-        col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
+        if not st.session_state.df_usend_uniq_ticks.empty:
+            unique_routes_df, import_details, user_ticks_df = st.session_state.tick_scrape_output
+            col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
+        else:
+            col1.info(f"There is currently no Tick dataset saved to this session, you may create one using the scrape tool or use a provided dataset.", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/Ticks/'
         files = os.listdir(preldata_path)
@@ -54,8 +55,11 @@ if anlist_type == 'ToDos':
         data_source_type_selections.insert(0, 'Use Session Dataset')
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
     if data_source_type == 'Use Session Dataset':
-        unique_routes_df, import_details, _ = st.session_state.todo_scrape_output
-        col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
+        if not st.session_state.df_usend_uniq_todos.empty:
+            unique_routes_df, import_details, _ = st.session_state.todo_scrape_output
+            col1.info(f"There is a currently loaded dataset saved on this session for user {import_details['username']} from date {import_details['date_scraped']}", icon="ℹ️")
+        else:
+            col1.info(f"There is currently no ToDo dataset saved to this session, you may create one using the scrape tool or use a provided dataset.", icon="ℹ️")
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/ToDos/'
         files = os.listdir(preldata_path)
@@ -188,7 +192,7 @@ if not unique_routes_df.empty:
         date_max = user_ticks_df['Date'].max()
         date_fil_type_widg_dict = {'label': "Date Filter Type",
                                    'options': ['Date Range', 'Quick Filter'],
-                                   'index': 1}
+                                   'index': 0}
         date_fil_widg_dict = {'label': "Date Filter",
                              'value': (date_min, date_max), 
                             'min_value': date_min,
@@ -352,7 +356,7 @@ if not unique_routes_df.empty:
     # Apply tick filters
     if anlist_type == 'Ticks' and len(date_fil) == 2:
         if df_uniq_fil.empty:
-            st.error("No Tick Results With Current Filter Settings")
+            st.error("No Results From Filter")
         else:
             # Initialize tick dataframe
             user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
@@ -374,12 +378,18 @@ if not unique_routes_df.empty:
     st.markdown('---')
     with st.expander("Overview Plots", expanded=True):
         ### Basic Plots
+        desert_pallete = ['#779ECC', '#FF7F50', '#C70039', '#9FC0DE', '#F2C894', '#425356', '#ac7c5c']
+        style_colordict = {'Lead':'#779ECC', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#9FC0DE', 'Attempt':'#F2C894', 'Flash':'#425356'}
+        leadstyle_colordict = {'Fell/Hung':'#779ECC', 'Redpoint':'#FF985A', 'Pinkpoint':'#FFB6C1', 'Flash':'#425356', 'Onsight':'#BAC9B4'}
+        routetype_colordict = {'Boulder':'#BAC9B4', 'Sport':'#FF985A', 'Trad':'#779ECC'}
+        spmp_colordict = {'SP':'#F2C894', 'MP':'#BAC9B4'}
+        baseloc_colorlist = desert_pallete + px.colors.qualitative.Pastel2
         # Pie Plots
         pie_header_cont = st.container()
         col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
         pie_chart_margin = dict(t=35, b=35, l=35, r=35)
         if df_uniq_fil.empty:
-            st.error("No Results With Current Filter Settings")
+            pass
         else:
             if anlist_type == 'Ticks' and len(date_fil) == 2:
                 pie_header_cont.markdown('##### Ticked Pitch Count Pie Charts')
@@ -388,7 +398,7 @@ if not unique_routes_df.empty:
                 fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values,
                                         names=df_counts_leadstyle.index,
                                         color=df_counts_leadstyle.index,
-                                        color_discrete_map={'Lead':'#779ECC', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#9FC0DE', 'Attempt':'#F2C894'},
+                                        color_discrete_map=style_colordict,
                                         title='Style',
                                         width=300,
                                         height=300)
@@ -400,7 +410,7 @@ if not unique_routes_df.empty:
                 fig_pie_leadstyle = px.pie(values=df_counts_leadstyle.values,
                                         names=df_counts_leadstyle.index,
                                         color=df_counts_leadstyle.index,
-                                        color_discrete_map={'Fell/Hung':'#779ECC', 'Redpoint':'#FF985A', 'Pinkpoint':'#FFB6C1', 'Flash':'#425356', 'Onsight':'#BAC9B4'},
+                                        color_discrete_map=leadstyle_colordict,
                                         title='Lead Style',
                                         width=300,
                                         height=300)
@@ -416,7 +426,7 @@ if not unique_routes_df.empty:
             fig_pie_routetype = px.pie(values=df_counts_routetype.values,
                                     names=df_counts_routetype.index,
                                     color=df_counts_routetype.index,
-                                    color_discrete_map={'Boulder':'#BAC9B4', 'Sport':'#FF985A', 'Trad':'#779ECC'},
+                                    color_discrete_map=routetype_colordict,
                                     title='Climb Type',
                                     width=300,
                                     height=300)
@@ -428,7 +438,7 @@ if not unique_routes_df.empty:
             fig_pie_spmp = px.pie(values=df_counts_spmp.values,
                                 names=df_counts_spmp.index,
                                 color=df_counts_spmp.index,
-                                color_discrete_map={'SP':'#F2C894', 'MP':'#BAC9B4'},
+                                color_discrete_map=spmp_colordict,
                                 category_orders={},
                                 title="Single or Multi Pitch",
                                 width=300,
@@ -440,104 +450,186 @@ if not unique_routes_df.empty:
             df_counts_loc1 = df_uniq_fil.groupby(df_uniq_fil['Location'].apply(lambda x: x.split('>')[0]))[pie_agg].sum()
             fig_pie_loc1 = px.pie(values=df_counts_loc1.values,
                                 names=df_counts_loc1.index,
-                                color_discrete_sequence=px.colors.qualitative.Pastel2,
+                                color_discrete_sequence=baseloc_colorlist, 
                                 title='Base Location',
                                 width=300,
                                 height=300)
             fig_pie_loc1.update_layout(margin=pie_chart_margin)
             fig_pie_loc1.update_traces(hole=.4)
             col3.plotly_chart(fig_pie_loc1)
-        
+
         st.markdown('---')
         # Histograms
         st.markdown('##### Histograms')
-        col1, col2 = st.columns([1,1])
-        if anlist_type == 'Ticks':
-            fig_hist_rgrade = px.histogram(user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby('Rating', as_index=False, observed=True).sum(),
-                                        x='Rating',
-                                        y='Pitches',
-                                        category_orders={'Rating': r_grade_fil},
+ 
+        if df_uniq_fil.empty:
+            pass
+        else:
+            pvg_part_cont = st.container()
+            pvg_graph_cont = st.container()
+            pvgcol1, pvgcol2 = pvg_graph_cont.columns([1,1])
+            grade_date_part_sel = pvg_part_cont.checkbox("Group Partition", help="Group columns by qualitative metric such as route type", key='PVG Group Partion')
+            if anlist_type == 'Ticks':
+                # Tick Pitches V Grades histograms
+                grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Location'}
+                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colorlist}
+                if grade_date_part_sel == True:
+                    grade_date_part_sel = pvg_part_cont.selectbox("Partition By", options=grade_date_col_dict.keys(), key="PVG Partition By")
+                    grade_date_perc_sel = pvg_part_cont.checkbox("Configure to Percentage", key="PVG Configure to Percentage")
+                    rpitchagg = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches Ticked'].sum().unstack()
+                    bpitchagg = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches Ticked'].sum().unstack()
+                    if grade_date_perc_sel == True:
+                        rpitchagg = rpitchagg.div(rpitchagg.sum(axis=1), axis=0)
+                        bpitchagg = bpitchagg.div(bpitchagg.sum(axis=1), axis=0)
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                x=rpitchagg.index,
+                                                y=rpitchagg.columns,
+                                                color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                category_orders={'Rating': r_grade_fil},
+                                                marginal='box',
+                                                title='Route Grades')
+                    fig_hist_rgrade.update_xaxes(type='category')
+                    pvgcol1.plotly_chart(fig_hist_rgrade)
+                    if not bpitchagg.empty:
+                        fig_hist_bgrade = px.histogram(bpitchagg,
+                                                    x=bpitchagg.index,
+                                                    y=bpitchagg.columns,
+                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                    category_orders={'Rating': b_grade_fil},
+                                                    marginal='box',
+                                                    title='Boulder Grades')
+                        fig_hist_bgrade.update_xaxes(type='category')
+                        pvgcol2.plotly_chart(fig_hist_bgrade)
+                    else:
+                        pvgcol2.warning("Bouldering Data Cannot Be Partitioned That Way")
+                if grade_date_part_sel == False:
+                    rpitchagg = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby('Rating', as_index=False, observed=True).sum()
+                    bpitchagg = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby('Rating', as_index=False, observed=True).sum()
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                   x='Rating',
+                                                   y='Pitches Ticked',
+                                               category_orders={'Rating': r_grade_fil},
+                                               marginal='box',
+                                               title='Route Grades',
+                                               text_auto=True)
+                    fig_hist_rgrade.update_xaxes(type='category')
+                    fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
+                    pvgcol1.plotly_chart(fig_hist_rgrade)
+                    fig_hist_bgrade = px.histogram(bpitchagg,
+                                                   x='Rating',
+                                                   y='Pitches Ticked',
+                                                category_orders={'Rating': b_grade_fil},
+                                                marginal='box',
+                                                title='Boulder Grades',
+                                                text_auto=True)
+                    fig_hist_bgrade.update_xaxes(type='category')
+                    fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
+                    pvgcol2.plotly_chart(fig_hist_bgrade)
+            if anlist_type == 'ToDos':
+                # Todo Pitches V Grade histograms
+                grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Base Location':'Location'}
+                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Base Location':baseloc_colorlist}
+                if grade_date_part_sel == True:
+                    grade_date_part_sel = pvg_part_cont.selectbox("Partition By", options=grade_date_col_dict.keys(), key="PVG Partition By")
+                    grade_date_perc_sel = pvg_part_cont.checkbox("Configure to Percentage", key="PVG Configure to Percentage")
+                    rpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches'].sum().unstack()
+                    bpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches'].sum().unstack()
+                    if grade_date_perc_sel == True:
+                        rpitchagg = rpitchagg.div(rpitchagg.sum(axis=1), axis=0)
+                        bpitchagg = bpitchagg.div(bpitchagg.sum(axis=1), axis=0)
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                x=rpitchagg.index,
+                                                y=rpitchagg.columns,
+                                                color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                category_orders={'Rating': r_grade_fil},
+                                                marginal='box',
+                                                title='Route Grades')
+                    fig_hist_rgrade.update_xaxes(type='category')
+                    pvgcol1.plotly_chart(fig_hist_rgrade)
+                    if not bpitchagg.empty:
+                        fig_hist_bgrade = px.histogram(bpitchagg,
+                                                    x=bpitchagg.index,
+                                                    y=bpitchagg.columns,
+                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                    category_orders={'Rating': b_grade_fil},
+                                                    marginal='box',
+                                                    title='Boulder Grades')
+                        fig_hist_bgrade.update_xaxes(type='category')
+                        pvgcol2.plotly_chart(fig_hist_bgrade)
+                    else:
+                        pvgcol2.warning("Bouldering Data Cannot Be Partitioned That Way")
+                if grade_date_part_sel == False:
+                    rpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'].groupby('Rating', as_index=False, observed=True).sum()
+                    bpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'].groupby('Rating', as_index=False, observed=True).sum()
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                   x='Rating',
+                                                   y='Pitches',
+                                               category_orders={'Rating': r_grade_fil},
+                                               marginal='box',
+                                               title='Route Grades',
+                                               text_auto=True)
+                    fig_hist_rgrade.update_xaxes(type='category')
+                    fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
+                    pvgcol1.plotly_chart(fig_hist_rgrade)
+                    fig_hist_bgrade = px.histogram(bpitchagg,
+                                                   x='Rating',
+                                                   y='Pitches',
+                                                category_orders={'Rating': b_grade_fil},
+                                                marginal='box',
+                                                title='Boulder Grades',
+                                                text_auto=True)
+                    fig_hist_bgrade.update_xaxes(type='category')
+                    fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
+                    pvgcol2.plotly_chart(fig_hist_bgrade)
+            
+            # Both Tick and ToDo histograms
+            col1, col2 = st.columns([1,1])
+            fig_hist_mppitches = px.histogram(df_uniq_fil[df_uniq_fil['SP/MP']=='MP'],
+                                            x='Pitches',
+                                            marginal="box",
+                                            title='Multi Pitch Pitch Counts')
+            fig_hist_mppitches.update_traces(marker_color = '#779ECC')
+            col1.plotly_chart(fig_hist_mppitches)
+            fig_hist_length = px.histogram(df_uniq_fil,
+                                        x='Length',
                                         marginal='box',
-                                        title='Route Grades',
-                                        text_auto=True)
-            fig_hist_rgrade.update_xaxes(type='category')
-            fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
-            col1.plotly_chart(fig_hist_rgrade)
-            fig_hist_bgrade = px.histogram(user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby('Rating', as_index=False, observed=True)['Pitches'].sum(),
-                                        x='Rating',
-                                        y='Pitches',
-                                        category_orders={'Rating': b_grade_fil},
-                                        marginal='box',
-                                        title='Boulder Grades',
-                                        text_auto=True)
-            fig_hist_bgrade.update_xaxes(type='category')
-            fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
-            col2.plotly_chart(fig_hist_bgrade)
-        if anlist_type == 'ToDos':
-            fig_hist_rgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'],
-                                        x='Rating',
-                                        category_orders={'Rating': r_grade_fil},
-                                        marginal='box',
-                                        title='Route Grades',
-                                        text_auto=True)
-            fig_hist_rgrade.update_xaxes(type='category')
-            fig_hist_rgrade.update_traces(marker_color='#ac7c5c')
-            col1.plotly_chart(fig_hist_rgrade)
-            fig_hist_bgrade = px.histogram(df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'],
-                                        x='Rating',
-                                        category_orders={'Rating': b_grade_fil},
-                                        marginal='box',
-                                        title='Boulder Grades',
-                                        text_auto=True)
-            fig_hist_bgrade.update_xaxes(type='category')
-            fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
-            col2.plotly_chart(fig_hist_bgrade)
-        fig_hist_mppitches = px.histogram(df_uniq_fil[df_uniq_fil['SP/MP']=='MP'],
-                                          x='Pitches',
-                                          marginal="box",
-                                          title='Multi Pitch Pitch Counts')
-        fig_hist_mppitches.update_traces(marker_color = '#779ECC')
-        col1.plotly_chart(fig_hist_mppitches)
-        fig_hist_length = px.histogram(df_uniq_fil,
-                                       x='Length',
-                                       marginal='box',
-                                       title=' Length')
-        fig_hist_length.update_traces(marker_color = '#FF985A')
-        fig_hist_length.update_layout(xaxis_title="Length (ft)")
-        col2.plotly_chart(fig_hist_length)
-        fig_hist_avgstars = px.histogram(df_uniq_fil,
-                                         x='Avg Stars',
-                                         marginal='box',
-                                         title='Stars')
-        fig_hist_avgstars.update_traces(marker_color='#ac7c5c')
-        col1.plotly_chart(fig_hist_avgstars)
-        fig_hist_numticks = px.histogram(df_uniq_fil,
-                                         x='Num Ticks',
-                                         marginal='box',
-                                         title='Number of Ticks')
-        fig_hist_numticks.update_traces(marker_color = '#BAC9B4')
-        col2.plotly_chart(fig_hist_numticks)
-        fig_hist_leadratio = px.histogram(df_uniq_fil,
-                                          x='Lead Ratio',
-                                          marginal='box',
-                                          title='Lead Ratio')
-        fig_hist_leadratio.update_traces(marker_color = '#779ECC')
-        col1.plotly_chart(fig_hist_leadratio)
-        fig_hist_osratio = px.histogram(df_uniq_fil,
-                                        x='OS Ratio',
-                                        marginal='box',
-                                        title='OS Ratio')
-        fig_hist_osratio.update_traces(marker_color = '#FF985A')
-        col2.plotly_chart(fig_hist_osratio)
-        fig_hist_repsend = px.histogram(df_uniq_fil,
-                                        x='Repeat Sender Ratio',
-                                        marginal='box',
-                                        title='Repeat Sender Ratio')
-        fig_hist_repsend.update_traces(marker_color='#ac7c5c')
-        col1.plotly_chart(fig_hist_repsend)
-        fig_hist_att2rp = px.histogram(df_uniq_fil, x='Mean Attempts To RP', marginal='box', title='Mean Attempts to RP')
-        fig_hist_att2rp.update_traces(marker_color = '#BAC9B4')
-        col2.plotly_chart(fig_hist_att2rp)
+                                        title=' Length')
+            fig_hist_length.update_traces(marker_color = '#FF985A')
+            fig_hist_length.update_layout(xaxis_title="Length (ft)")
+            col2.plotly_chart(fig_hist_length)
+            fig_hist_avgstars = px.histogram(df_uniq_fil,
+                                            x='Avg Stars',
+                                            marginal='box',
+                                            title='Stars')
+            fig_hist_avgstars.update_traces(marker_color='#ac7c5c')
+            col1.plotly_chart(fig_hist_avgstars)
+            fig_hist_numticks = px.histogram(df_uniq_fil,
+                                            x='Num Ticks',
+                                            marginal='box',
+                                            title='Number of Ticks')
+            fig_hist_numticks.update_traces(marker_color = '#BAC9B4')
+            col2.plotly_chart(fig_hist_numticks)
+            fig_hist_leadratio = px.histogram(df_uniq_fil,
+                                            x='Lead Ratio',
+                                            marginal='box',
+                                            title='Lead Ratio')
+            fig_hist_leadratio.update_traces(marker_color = '#779ECC')
+            col1.plotly_chart(fig_hist_leadratio)
+            fig_hist_osratio = px.histogram(df_uniq_fil,
+                                            x='OS Ratio',
+                                            marginal='box',
+                                            title='OS Ratio')
+            fig_hist_osratio.update_traces(marker_color = '#FF985A')
+            col2.plotly_chart(fig_hist_osratio)
+            fig_hist_repsend = px.histogram(df_uniq_fil,
+                                            x='Repeat Sender Ratio',
+                                            marginal='box',
+                                            title='Repeat Sender Ratio')
+            fig_hist_repsend.update_traces(marker_color='#ac7c5c')
+            col1.plotly_chart(fig_hist_repsend)
+            fig_hist_att2rp = px.histogram(df_uniq_fil, x='Mean Attempts To RP', marginal='box', title='Mean Attempts to RP')
+            fig_hist_att2rp.update_traces(marker_color = '#BAC9B4')
+            col2.plotly_chart(fig_hist_att2rp)
 
 
         
@@ -545,13 +637,13 @@ if not unique_routes_df.empty:
     st.markdown('---')
     st.markdown("##### Route Analysis")
     if df_uniq_fil.empty:
-        st.error("No Unique Route Results With Current Filter Settings")
+        pass
     else:
         with st.expander("Prefabricated Route Analysis"):
             col1, col2, col3 = st.columns([1,3,1])
             analysis_route_type_option = col1.radio("Route Type", options=['Routes', 'Boulders'], horizontal=True)
-            analysis_options_r = ['Rarely Led Routes', 'Rarely Toproped Routes', 'Commonly Onsighted Routes', 'Rarely Onsighted Routes', 'N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade', 'Hard to Redpoint', 'Popular To Repeat Send']
-            analysis_options_b = ['Commonly Onsighted Boulders', 'Rarely Onsighted Boulders', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade', 'Popular To Repeat Send']
+            analysis_options_r = ['Rarely Led Routes', 'Rarely Toproped Routes', 'Commonly Onsighted Routes', 'Rarely Onsighted Routes', 'N Most Onsighted Routes Per Grade', 'N Least Onsighted Routes Per Grade', 'Hard to Redpoint', 'Popular To Repeat Send (Classics)']
+            analysis_options_b = ['Commonly Onsighted Boulders', 'Rarely Onsighted Boulders', 'N Most Onsighted Boulders Per Grade', 'N Least Onsighted Boulders Per Grade', 'Popular To Repeat Send (Classics)']
             if analysis_route_type_option == 'Routes':
                 analysis_options = analysis_options_r
             if analysis_route_type_option == 'Boulders':
@@ -588,7 +680,7 @@ if not unique_routes_df.empty:
     ### Tick analysis
     if anlist_type == 'Ticks' and len(date_fil) == 2:
         if df_uniq_fil.empty:
-            st.error("No Tick Results With Current Filter Settings")
+            pass
         else:
             st.markdown('---')
             st.markdown("##### Tick Analysis")
@@ -610,10 +702,57 @@ if not unique_routes_df.empty:
                     st.plotly_chart(btimeplot, theme=None, use_container_width=True)
                     
             with st.expander("Tick Report", expanded=True):
-                fig_breakthrough = px.line(user_ticks_mff[user_ticks_mff['Grade Breakthrough']==True], x='Date', y='Rating', category_orders={'Rating': r_grade_fil[::-1]})
+                # Pitches V Date
+                treport_option_cont = st.container()
+                trcol1, trcol2 = treport_option_cont.columns([1,1])
+                date_div_dict={'1 Day':'D', '1 Week':'W', '2 Week':'2W', '1 Month':'M', '3 Month':'3M', '6 Month':'6M', '1 Year':'Y'}
+                pitchvdate_divtype = trcol1.radio("Pitches Vs. Date Increment", options=date_div_dict.keys(), index=3, horizontal=True)
+                col1, col2 = st.columns([1,1])
+                pitch_date_part_sel = trcol1.checkbox("Group Partition", help="Group columns by qualitative metric such as route type")
+                pitch_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Location'}
+                pitch_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colorlist}
+                if pitch_date_part_sel == True:
+                    pitch_date_part_sel = trcol1.selectbox("Pitches Vs. Date Partition By", options=pitch_date_part_dict.keys())
+                    pitch_date_perc_sel = trcol1.checkbox("Configure to Percentage")
+                    sumpitch = user_ticks_mff.groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[pitchvdate_divtype]), pitch_date_part_dict[pitch_date_part_sel]])['Pitches Ticked'].sum().fillna(0).unstack()
+                    if pitch_date_perc_sel == True:
+                        sumpitch = sumpitch.div(sumpitch.sum(axis=1), axis=0)
+                    fig_rollpitch = px.bar(sumpitch, title='Pitches Vs. Date', color_discrete_map=pitch_date_col_dict[pitch_date_part_sel])
+                    col1.plotly_chart(fig_rollpitch)
+                else:
+                    sumpitch = user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pitchvdate_divtype]))['Pitches Ticked'].sum().fillna(0)
+                    fig_rollpitch = px.bar(sumpitch, title='Pitches Vs. Date')
+                    fig_rollpitch.layout.showlegend = False
+                    fig_rollpitch.update_traces(marker_color=desert_pallete[6])
+                    col1.plotly_chart(fig_rollpitch)
+                st.write(user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pitchvdate_divtype]))['Pitches Ticked'].sum().fillna(0))
+                # Route Grade V Date
+                gradevdate_divtype = trcol2.radio("Route Vs. Grade Date Increment", options=date_div_dict.keys(), index=3, horizontal=True)
+                gradevdate_type_sel = trcol2.radio("Grade Vs. Date Type", options=['Route', 'Boulder'], horizontal=True)
+                if gradevdate_type_sel == 'Route':
+                    gradevdate_data = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder']
+                    gradevdate_cat = {'Rating': r_grade_fil[::-1]}
+                if gradevdate_type_sel == 'Boulder':
+                    gradevdate_data = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder']
+                    gradevdate_cat = {'Rating': b_grade_fil[::-1]}
+                fig_rollgrader = px.scatter(gradevdate_data, x='Date', y='Rating', title='Route Grade Vs. Date', category_orders=gradevdate_cat, hover_data=["Route", "Location", "Style"])
+                fig_rollgrader.update_yaxes(type='category')
+                col2.plotly_chart(fig_rollgrader)
+                
+                # Grade Breakthrough
+                fig_breakthrough = px.scatter(user_ticks_mff[user_ticks_mff['Grade Breakthrough']==True], x='Date', y='Rating', category_orders={'Rating': r_grade_fil[::-1]}, hover_data=["Route", "Location"], title="Grade Breakthrough")
                 fig_breakthrough.update_yaxes(type='category')
-                st.plotly_chart(fig_breakthrough)
+                fig_breakthrough.update_traces(marker_size=12, marker_color=desert_pallete[4])
+                col1.plotly_chart(fig_breakthrough)
+                
+                # Risky Climbs
+                fig_risk = px.scatter(user_ticks_mff[(~user_ticks_mff['Risk'].isna()) & (user_ticks_mff['Style'] == 'Lead')], x='Date', y='Rating', title='Risky Climbs', category_orders={'Rating': r_grade_fil[::-1]}, hover_data=["Risk", "Route", "Location", "Style", "Lead Style"])
+                fig_risk.update_yaxes(type='category')
+                fig_risk.update_traces(marker_size=12, marker_color=desert_pallete[5])
+                col2.plotly_chart(fig_risk)
+                
                 # Notable Sends
+                st.markdown('---')
                 df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff)
                 if all([df_bold_leads.empty, df_impressive_OS.empty, df_woops_falls.empty]):
                     st.error("No particularly notable sends, get out there!")
