@@ -84,6 +84,26 @@ def flag_notable_ticks(df_source):
     return df_source
 
 def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil):
+    """Creates a pyramid and grade vs time plot based on clean sends only for routes and boulders.
+
+    Parameters
+    ----------
+    df_source : df
+        source dataframe
+    selected_rgrade_array : list
+        list of route grades relevant to source dataframe
+    r_grade_fil : list
+        filtered list of relevant route grades
+    selected_bgrade_array : list
+        list of boulder grades relevant to source dataframe
+    b_grade_fil : list
+        filtered list of relevant boulder grades
+
+    Returns
+    -------
+    fig1, fig2, fig3, fig4
+        plotly figures
+    """
     from unique_route_handling import CLEAN_SEND_FIRST, CLEAN_SEND, YDS_GRADES_FULL, V_GRADES_FULL
     import plotly.express as px
 
@@ -119,6 +139,18 @@ def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgr
     return fig1, fig2, fig3, fig4
 
 def tick_report(df_source):
+    """Generates dataframes of routes filtered by some metric
+
+    Parameters
+    ----------
+    df_source : df
+        input dataframe
+
+    Returns
+    -------
+    df_bold_leads, df_impressive_OS, df_woops_falls
+        output dataframes
+    """
     # User led something rarely led
     df_bold_leads = df_source[(df_source['Lead Ratio'] < 0.4) & (df_source['Style'] == 'Lead') & (df_source['Route Type'] != 'Boulder')].sort_values(by='Lead Ratio', ascending=True)
     # User onsighted something rarely onsighted
