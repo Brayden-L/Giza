@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
+import streamlit as st
 
+@st.experimental_memo
 def tick_merge(df_ticks, df_uniq):
     """Merges unique route metrics with a tick list.
 
@@ -25,6 +27,7 @@ def tick_merge(df_ticks, df_uniq):
     df_out = df_ticks.merge(df_uniq[['Route ID', 'Pitches', 'Lead Ratio', 'Num Ticks', 'Num Tickers', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Rating', 'Length', 'SP/MP']], how='left', on='Route ID')
     return df_out
 
+@st.experimental_memo
 def flag_notable_ticks(df_source):
     """ Takes a tick list dataframe, adds tag columns to track notable sends.
 
@@ -83,6 +86,7 @@ def flag_notable_ticks(df_source):
         df_source['Attempts'] = None
     return df_source
 
+@st.experimental_memo
 def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil):
     """Creates a pyramid and grade vs time plot based on clean sends only for routes and boulders.
 

@@ -133,9 +133,12 @@ if not unique_routes_df.empty:
     # Grade filter
     def grade_filter_align(datalist, orderedlist):
         full_list = [i for i in orderedlist if i in datalist['Rating'].unique()]
-        minval = full_list[0]
-        maxval = full_list[-1]
-        trunc_full_list = orderedlist[orderedlist.index(minval) : orderedlist.index(maxval)+1]
+        if full_list == []:
+            trunc_full_list = orderedlist
+            minval, maxval = orderedlist[0], orderedlist[-1]
+        else:
+            minval, maxval = full_list[0], full_list[-1]
+            trunc_full_list = orderedlist[orderedlist.index(minval) : orderedlist.index(maxval)+1]
         return trunc_full_list, (minval, maxval)
     r_grade_fil, b_grade_fil = [], []
     r_grade_fil_widg_dict = {'label': "Route Grade Filter",
@@ -376,12 +379,13 @@ if not unique_routes_df.empty:
     st.markdown('---')
     with st.expander("Overview Plots", expanded=True):
         ### Basic Plots
+        # Color sequence definitions
         desert_pallete = ['#779ECC', '#FF7F50', '#C70039', '#9FC0DE', '#F2C894', '#425356', '#ac7c5c']
         style_colordict = {'Lead':'#779ECC', 'TR':'#FF7F50', 'Follow':'#C70039', 'Send':'#9FC0DE', 'Attempt':'#F2C894', 'Flash':'#425356'}
         leadstyle_colordict = {'Fell/Hung':'#779ECC', 'Redpoint':'#FF985A', 'Pinkpoint':'#FFB6C1', 'Flash':'#425356', 'Onsight':'#BAC9B4'}
         routetype_colordict = {'Boulder':'#BAC9B4', 'Sport':'#FF985A', 'Trad':'#779ECC'}
         spmp_colordict = {'SP':'#F2C894', 'MP':'#BAC9B4'}
-        baseloc_colorlist = desert_pallete + px.colors.qualitative.Pastel2
+        baseloc_colordict = dict(zip(df_uniq_fil['Base Location'].value_counts().index, desert_pallete + px.colors.qualitative.Pastel2))
         # Pie Plots
         pie_header_cont = st.container()
         col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
@@ -448,7 +452,7 @@ if not unique_routes_df.empty:
             df_counts_loc1 = df_uniq_fil.groupby(df_uniq_fil['Location'].apply(lambda x: x.split('>')[0]))[pie_agg].sum()
             fig_pie_loc1 = px.pie(values=df_counts_loc1.values,
                                 names=df_counts_loc1.index,
-                                color_discrete_sequence=baseloc_colorlist, 
+                                color_discrete_map=baseloc_colordict, 
                                 title='Base Location',
                                 width=300,
                                 height=300)
@@ -470,7 +474,7 @@ if not unique_routes_df.empty:
             if anlist_type == 'Ticks':
                 # Tick Pitches V Grades histograms
                 grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Base Location'}
-                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colorlist}
+                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colordict}
                 if grade_date_part_sel == True:
                     grade_date_part_sel = pvg_part_cont.selectbox("Partition By", options=grade_date_col_dict.keys(), key="PVG Partition By")
                     grade_date_perc_sel = pvg_part_cont.checkbox("Configure to Percentage", key="PVG Configure to Percentage")
@@ -479,41 +483,23 @@ if not unique_routes_df.empty:
                     if grade_date_perc_sel == True:
                         rpitchagg = rpitchagg.div(rpitchagg.sum(axis=1), axis=0)
                         bpitchagg = bpitchagg.div(bpitchagg.sum(axis=1), axis=0)
-                    if grade_date_part_sel == 'Base Location':
-                        fig_hist_rgrade = px.histogram(rpitchagg,
-                                                    x=rpitchagg.index,
-                                                    y=rpitchagg.columns,
-                                                    color_discrete_sequence=baseloc_colorlist,
-                                                    category_orders={'Rating': r_grade_fil},
-                                                    marginal='box',
-                                                    title='Route Grades')
-                    else:
-                        fig_hist_rgrade = px.histogram(rpitchagg,
-                                                    x=rpitchagg.index,
-                                                    y=rpitchagg.columns,
-                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
-                                                    category_orders={'Rating': r_grade_fil},
-                                                    marginal='box',
-                                                    title='Route Grades')
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                x=rpitchagg.index,
+                                                y=rpitchagg.columns,
+                                                color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                category_orders={'Rating': r_grade_fil},
+                                                marginal='box',
+                                                title='Route Grades')
                     fig_hist_rgrade.update_xaxes(type='category')
                     pvgcol1.plotly_chart(fig_hist_rgrade)
                     if not bpitchagg.empty:
-                        if grade_date_part_sel == 'Base Location':
-                            fig_hist_bgrade = px.histogram(bpitchagg,
-                                                        x=bpitchagg.index,
-                                                        y=bpitchagg.columns,
-                                                        color_discrete_sequence=baseloc_colorlist,
-                                                        category_orders={'Rating': b_grade_fil},
-                                                        marginal='box',
-                                                        title='Boulder Grades')
-                        else:
-                            fig_hist_bgrade = px.histogram(bpitchagg,
-                                                        x=bpitchagg.index,
-                                                        y=bpitchagg.columns,
-                                                        color_discrete_map=grade_date_col_dict[grade_date_part_sel],
-                                                        category_orders={'Rating': b_grade_fil},
-                                                        marginal='box',
-                                                        title='Boulder Grades')
+                        fig_hist_bgrade = px.histogram(bpitchagg,
+                                                    x=bpitchagg.index,
+                                                    y=bpitchagg.columns,
+                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                    category_orders={'Rating': b_grade_fil},
+                                                    marginal='box',
+                                                    title='Boulder Grades')
                         fig_hist_bgrade.update_xaxes(type='category')
                         pvgcol2.plotly_chart(fig_hist_bgrade)
                     else:
@@ -544,7 +530,7 @@ if not unique_routes_df.empty:
             if anlist_type == 'ToDos':
                 # Todo Pitches V Grade histograms
                 grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Base Location':'Base Location'}
-                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Base Location':baseloc_colorlist}
+                grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Base Location':baseloc_colordict}
                 if grade_date_part_sel == True:
                     grade_date_part_sel = pvg_part_cont.selectbox("Partition By", options=grade_date_col_dict.keys(), key="PVG Partition By")
                     grade_date_perc_sel = pvg_part_cont.checkbox("Configure to Percentage", key="PVG Configure to Percentage")
@@ -553,41 +539,23 @@ if not unique_routes_df.empty:
                     if grade_date_perc_sel == True:
                         rpitchagg = rpitchagg.div(rpitchagg.sum(axis=1), axis=0)
                         bpitchagg = bpitchagg.div(bpitchagg.sum(axis=1), axis=0)
-                    if grade_date_part_sel == 'Base Location':
-                        fig_hist_rgrade = px.histogram(rpitchagg,
-                                                    x=rpitchagg.index,
-                                                    y=rpitchagg.columns,
-                                                    color_discrete_sequence=baseloc_colorlist,
-                                                    category_orders={'Rating': r_grade_fil},
-                                                    marginal='box',
-                                                    title='Route Grades')
-                    else:
-                        fig_hist_rgrade = px.histogram(rpitchagg,
-                                                    x=rpitchagg.index,
-                                                    y=rpitchagg.columns,
-                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
-                                                    category_orders={'Rating': r_grade_fil},
-                                                    marginal='box',
-                                                    title='Route Grades')
+                    fig_hist_rgrade = px.histogram(rpitchagg,
+                                                x=rpitchagg.index,
+                                                y=rpitchagg.columns,
+                                                color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                category_orders={'Rating': r_grade_fil},
+                                                marginal='box',
+                                                title='Route Grades')
                     fig_hist_rgrade.update_xaxes(type='category')
                     pvgcol1.plotly_chart(fig_hist_rgrade)
-                    if not bpitchagg.empty:
-                        if grade_date_part_sel == 'Base Location':
-                            fig_hist_bgrade = px.histogram(bpitchagg,
-                                                        x=bpitchagg.index,
-                                                        y=bpitchagg.columns,
-                                                        color_discrete_sequence=baseloc_colorlist,
-                                                        category_orders={'Rating': b_grade_fil},
-                                                        marginal='box',
-                                                        title='Boulder Grades')
-                        else:
-                            fig_hist_bgrade = px.histogram(bpitchagg,
-                                                        x=bpitchagg.index,
-                                                        y=bpitchagg.columns,
-                                                        color_discrete_map=grade_date_col_dict[grade_date_part_sel],
-                                                        category_orders={'Rating': b_grade_fil},
-                                                        marginal='box',
-                                                        title='Boulder Grades')
+                    if bpitchagg.empty:
+                        fig_hist_bgrade = px.histogram(bpitchagg,
+                                                    x=bpitchagg.index,
+                                                    y=bpitchagg.columns,
+                                                    color_discrete_map=grade_date_col_dict[grade_date_part_sel],
+                                                    category_orders={'Rating': b_grade_fil},
+                                                    marginal='box',
+                                                    title='Boulder Grades')
                         fig_hist_bgrade.update_xaxes(type='category')
                         pvgcol2.plotly_chart(fig_hist_bgrade)
                     else:
@@ -737,49 +705,47 @@ if not unique_routes_df.empty:
                     
             with st.expander("Tick Report", expanded=True):
                 # Pitches V Date
-                treport_option_cont = st.container()
-                trcol1, trcol2 = treport_option_cont.columns([1,1])
-                date_div_dict={'1 Day':'D', '1 Week':'W', '2 Week':'2W', '1 Month':'M', '3 Month':'3M', '6 Month':'6M', '1 Year':'Y'}
-                pitchvdate_divtype = trcol1.radio("Time Increment", options=date_div_dict.keys(), index=3, horizontal=True, key='Time Increment Pitches Vs. Date')
+                pvd_cont = st.container()
+                date_div_dict={'1 Day':'D', '1 Week':'W', '2 Week':'2W', '1 Month':'MS', '3 Month':'3MS', '6 Month':'6MS', '1 Year':'AS'}
+                pvd_divtype = st.radio("Time Increment", options=date_div_dict.keys(), index=3, horizontal=True, key='Time Increment Pitches Vs. Date')
                 col1, col2 = st.columns([1,1])
-                pitch_date_part_sel = trcol1.checkbox("Group Partition", help="Group columns by qualitative metric such as route type")
-                pitch_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Base Location'}
-                pitch_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colorlist}
-                if pitch_date_part_sel == True:
-                    pitch_date_part_sel = trcol1.selectbox("Pitches Vs. Date Partition By", options=pitch_date_part_dict.keys())
-                    pitch_date_perc_sel = trcol1.checkbox("Configure to Percentage")
-                    sumpitch = user_ticks_mff.groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[pitchvdate_divtype]), pitch_date_part_dict[pitch_date_part_sel]])['Pitches Ticked'].sum().fillna(0).unstack()
+                pvd_part_sel = st.checkbox("Group Partition", help="Group columns by qualitative metric such as route type")
+                pvd_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Base Location'}
+                pvd_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Style':style_colordict, 'Lead Style':leadstyle_colordict, 'Base Location':baseloc_colordict}
+                if pvd_part_sel == True:
+                    pvd_part_sel = st.selectbox("Pitches Vs. Date Partition By", options=pvd_part_dict.keys())
+                    pitch_date_perc_sel = st.checkbox("Configure to Percentage")
+                    sumpitch = user_ticks_mff.groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]), pvd_part_dict[pvd_part_sel]])['Pitches Ticked'].sum().fillna(0).unstack()
                     if pitch_date_perc_sel == True:
                         sumpitch = sumpitch.div(sumpitch.sum(axis=1), axis=0)
-                    if pitch_date_part_sel == 'Base Location': # I don't love this if else
-                        fig_rollpitch = px.bar(sumpitch, title='Pitches Vs. Date', color_discrete_sequence=baseloc_colorlist)
-                    else:
-                        fig_rollpitch = px.bar(sumpitch, title='Pitches Vs. Date', color_discrete_map=pitch_date_col_dict[pitch_date_part_sel])
-                    col1.plotly_chart(fig_rollpitch)
+                    fig_pvd = px.bar(sumpitch, title='Pitches Vs. Date', color_discrete_map=pvd_col_dict[pvd_part_sel])
+                    pvd_cont.plotly_chart(fig_pvd, use_container_width=True)
                 else:
-                    sumpitch = user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pitchvdate_divtype]))['Pitches Ticked'].sum().fillna(0)
-                    # TODO there is an annoying visual issue where if 1year time increment is selected it displays the bar with a label at +1 the actual year.
-                    fig_rollpitch = px.bar(sumpitch, title='Pitches Vs. Date')
-                    fig_rollpitch.layout.showlegend = False
-                    fig_rollpitch.update_traces(marker_color=desert_pallete[6])
-                    col1.plotly_chart(fig_rollpitch)
+                    sumpitch = user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]))['Pitches Ticked'].sum().fillna(0)
+                    fig_pvd = px.bar(sumpitch, title='Pitches Vs. Date')
+                    fig_pvd.layout.showlegend = False
+                    fig_pvd.update_traces(marker_color=desert_pallete[6])
+                    pvd_cont.plotly_chart(fig_pvd, use_container_width=True)
+                
                 # Route Grade V Date
-
-                gradevdate_divtype = trcol2.radio("Time Increment", options=date_div_dict.keys(), index=3, horizontal=True, key='Time Increment Grade Vs. Date')
-                gradevdate_type_sel = trcol2.radio("Routes or Boulders", options=['Route', 'Boulder'], horizontal=True, key='Grade Vs. Date Type')
-                gradevdate_norm_sel = trcol2.checkbox("Normalize by Grade", key='Grade Vs. Date Normalize', help='Default will heatmap comparing all grades, this is useful for discovering "volume" and at which grade you were doing volume for. Enabling this will normalize along each grade, giving you a better idea as to when you were performing volume at a given grade.')
-                if gradevdate_type_sel == 'Route':
-                    gradevdate_data = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[gradevdate_divtype]), 'Rating'], observed=True)['Rating'].count().fillna(0).unstack().transpose()
-                    gradevdate_cat = r_grade_fil[::-1]
-                if gradevdate_type_sel == 'Boulder':
-                    gradevdate_data = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[gradevdate_divtype]), 'Rating'], observed=True)['Rating'].count().fillna(0).unstack().transpose()
-                    gradevdate_cat = b_grade_fil[::-1]
-                if gradevdate_norm_sel == True:
-                    gradevdate_data = gradevdate_data.div(gradevdate_data.max(axis=1), axis=0)
-                fig_rollgrader = px.imshow(gradevdate_data, title='Route Grade Vs. Date')
-                fig_rollgrader.update_yaxes(type='category', categoryorder='array', categoryarray=gradevdate_cat)
-                col2.plotly_chart(fig_rollgrader)
-                                
+                gvd_cont = st.container()
+                gvd_divtype = st.radio("Time Increment", options=date_div_dict.keys(), index=3, horizontal=True, key='Time Increment Grade Vs. Date')
+                gvd_type_sel = st.radio("Routes or Boulders", options=['Route', 'Boulder'], horizontal=True, key='Grade Vs. Date Type')
+                gvd_norm_sel = st.checkbox("Normalize by Grade", key='Grade Vs. Date Normalize', help='Default will heatmap comparing all grades, this is useful for discovering "overall volume" and at which grade you were doing volume at. Enabling this will normalize along each grade, giving you a better idea as to when you were performing volume at a given grade.')
+                if gvd_type_sel == 'Route':
+                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby(by=['Rating', pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype])], observed=True)['Rating'].count().fillna(0).unstack()
+                    gvd_cat = r_grade_fil[::-1]
+                if gvd_type_sel == 'Boulder':
+                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby(by=['Rating', pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype])], observed=True)['Rating'].count().fillna(0).unstack()
+                    gvd_cat = b_grade_fil[::-1]
+                gvd_data = gvd_data.reindex(gvd_cat)
+                if gvd_norm_sel == True:
+                    gvd_data = gvd_data.div(gvd_data.max(axis=1), axis=0)
+                fig_gvd = px.imshow(gvd_data, title='Route Grade Vs. Date', color_continuous_scale='Reds')
+                fig_gvd.update_yaxes(type='category')
+                gvd_cont.plotly_chart(fig_gvd, use_container_width=True)
+                
+                col1, col2 = st.columns([1,1])
                 # Grade Breakthrough
                 fig_breakthrough = px.scatter(user_ticks_mff[user_ticks_mff['Grade Breakthrough']==True], x='Date', y='Rating', category_orders={'Rating': r_grade_fil[::-1]}, hover_data=["Route", "Location"], title="Grade Breakthrough")
                 fig_breakthrough.update_yaxes(type='category')
@@ -808,8 +774,6 @@ if not unique_routes_df.empty:
                         theme='balham',
                         gridOptions=gb.build(),
                         allow_unsafe_jscode=True)
-                    st.text('')
-                st.markdown('---')
                 if notablesend_sel == 'Impressive Onsights' and not df_impressive_OS.empty:
                     st.markdown("""##### [Onsighted or Flashed route with low OS ratio]  
                                 Few others managed to nab the OS/Flash, but you did.""")
@@ -818,8 +782,6 @@ if not unique_routes_df.empty:
                         theme='balham',
                         gridOptions=gb.build(),
                         allow_unsafe_jscode=True)
-                    st.text('')
-                st.markdown('---')
                 if notablesend_sel =='Whoops Falls' and not df_woops_falls.empty:
                     st.markdown("""##### [Fell/Hung route with high OS ratio]
                                 We all fall, but these were your most agregious slip ups.""")
@@ -828,7 +790,6 @@ if not unique_routes_df.empty:
                         theme='balham',
                         gridOptions=gb.build(),
                         allow_unsafe_jscode=True)
-                    st.text('')
                     
             with st.expander("Full Data Table: Ticks"):
                 df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)

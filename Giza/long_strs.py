@@ -24,7 +24,7 @@ analysis_explainer = """
 6. **Prefabricated Route Analysis:** These plots provide a list of routes according to a desired type. Examples are the 3 most rarely onsighted for each grade in a list, or popular to repeat send.
 7. **Full Routes Data Table:** If the prefabricated data does not have what you are looking for, you can sort and filter however you wish within this table.
 8. **(Ticks Only) Tick Pyramid Plots:** The namesake. This section provides a pyramid plot and scatter plot of time vs. grade for all "sent" climbs. It lists attempts to send within each marker. It also includes tooltips with additional details.
-10. **(Ticks Only) Tick Report:** A small grouping of lists that indicate notable tick occurences as compared to Giza added metrics. Also includes various other interesting plots.
+10. **(Ticks Only) Tick Report:** A small collection of time series plots and lists that indicate notable sends as compared to added metrics.
 11. **(Ticks Only) Full Ticks Data Table:** If the provided analysis is not enough for you, you can sort and filter however you please within this table.<br><br>
 ##### Added Metrics:
 Giza adds multiple new metrics gathered from tick data. They are:
