@@ -734,18 +734,18 @@ if not unique_routes_df.empty:
                 gvd_type_sel = st.radio("Routes or Boulders", options=['Route', 'Boulder'], horizontal=True, key='Grade Vs. Date Type')
                 gvd_norm_sel = st.checkbox("Normalize by Grade", key='Grade Vs. Date Normalize', help='Default will heatmap comparing all grades, this is useful for discovering "overall volume" and at which grade you were doing volume at. Enabling this will normalize along each grade, giving you a better idea as to when you were performing volume at a given grade.')
                 if gvd_type_sel == 'Route':
-                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby(by=['Rating', pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype])], observed=True)['Rating'].count().fillna(0).unstack()
+                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] != 'Boulder'].groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype]), 'Rating'], observed=True)['Rating'].count().fillna(0).unstack().sort_index().transpose()
                     gvd_cat = r_grade_fil[::-1]
                 if gvd_type_sel == 'Boulder':
-                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby(by=['Rating', pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype])], observed=True)['Rating'].count().fillna(0).unstack()
+                    gvd_data = user_ticks_mff[user_ticks_mff['Route Type'] == 'Boulder'].groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[gvd_divtype]), 'Rating'], observed=True)['Rating'].count().fillna(0).unstack().sort_index().transpose()
                     gvd_cat = b_grade_fil[::-1]
                 gvd_data = gvd_data.reindex(gvd_cat)
                 if gvd_norm_sel == True:
                     gvd_data = gvd_data.div(gvd_data.max(axis=1), axis=0)
-                fig_gvd = px.imshow(gvd_data, title='Route Grade Vs. Date', color_continuous_scale='Reds')
+                fig_gvd = px.imshow(gvd_data, title='Route Grade Vs. Date', color_continuous_scale='RdBu_r')
                 fig_gvd.update_yaxes(type='category')
                 gvd_cont.plotly_chart(fig_gvd, use_container_width=True)
-                
+                                
                 col1, col2 = st.columns([1,1])
                 # Grade Breakthrough
                 fig_breakthrough = px.scatter(user_ticks_mff[user_ticks_mff['Grade Breakthrough']==True], x='Date', y='Rating', category_orders={'Rating': r_grade_fil[::-1]}, hover_data=["Route", "Location"], title="Grade Breakthrough")
