@@ -28,8 +28,12 @@ col1, col2, col3 = st.columns([1.5,0.25,1.25])
 col1.header('Dataset Selection')
 anlist_type = col1.radio("List Type", options=["Ticks", "ToDos"], horizontal=True)
 data_source_type_selections = ['Use Session Dataset', 'Select Provided Dataset', 'Upload Pickle File']
+if st.session_state.df_usend_uniq_ticks.empty:
+    data_source_type_startind = 1
+else:
+    data_source_type_startind = 0
 if anlist_type == 'Ticks':
-    data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
+    data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True, index=data_source_type_startind)
     if data_source_type == 'Use Session Dataset':
         if not st.session_state.df_usend_uniq_ticks.empty:
             unique_routes_df, import_details, user_ticks_df = st.session_state.tick_scrape_output
@@ -52,7 +56,7 @@ if anlist_type == 'Ticks':
             except:
                 st.error("File Error", icon="⚠️")
 if anlist_type == 'ToDos':
-    data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True)
+    data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True, index=data_source_type_startind)
     if data_source_type == 'Use Session Dataset':
         if not st.session_state.df_usend_uniq_todos.empty:
             unique_routes_df, import_details, _ = st.session_state.todo_scrape_output
