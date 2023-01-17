@@ -92,6 +92,7 @@ with col2:
                     st.warning(f"{failed_statscrape} failed statpage scrapes")
                     failed_statscrape_list
                 st.info("To retry, redownload the data then scrape again.", icon="ℹ️")
+        st.session_state.df_usend_uniq.drop(columns=['Tick Counts', 'Re Mainpage', 'Re Statpage', 'Route Ticks'], inplace=True) # This drastically cuts down on the file size once the analysis is finished.
 
 ### Session state handling
 # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session. We must package it for session state and file export.
