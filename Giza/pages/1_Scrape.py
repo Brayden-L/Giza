@@ -4,7 +4,7 @@ import streamlit_nested_layout
 from unique_route_handling import *
 from long_strs import scrape_explainer
 from datetime import date
-import json
+import pickle
 
 ### Setup
 st.set_page_config(layout="wide")

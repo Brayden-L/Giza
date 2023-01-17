@@ -3,13 +3,9 @@
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-import plotly.figure_factory as ff
+import streamlit as st
 
 # Scraping Related
-# import grequests # You will get errors if grequests is not above requests
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from bs4 import BeautifulSoup
@@ -20,12 +16,7 @@ import re
 # General
 import pyinputplus as pyip
 import datetime as dt
-from datetime import datetime
 from stqdm import stqdm
-import pickle
-import random
-import math 
-import string
 
 # Initializations
 stqdm.pandas()
@@ -412,8 +403,8 @@ def routescrape_syncro(df_source, retries=3):
             print(url)
             print(e)
             res = None
-        
         return res
+    
     stqdm.pandas(desc="(1/5) Scraping Mainpages")
     if 'Re Mainpage' not in df_source.columns: # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
         df_source.insert(len(df_source.columns),'Re Mainpage',None)
@@ -745,6 +736,7 @@ def tick_analysis(df_source):
     return df_source
 
 # %%
+@st.experimental_memo
 def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrade_array, numN):
     """Creates prefab tables based on tick metrics from source dataframe
 

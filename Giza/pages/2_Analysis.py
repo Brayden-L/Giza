@@ -5,6 +5,7 @@ from unique_route_handling import *
 from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
 from long_strs import analysis_explainer
+import plotly.express as px
 import os
 from pathlib import Path
 from datetime import date
