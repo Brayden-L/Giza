@@ -1,6 +1,6 @@
 scrape_explainer = """
 ##### Options
-It is first necessary to explain that streamlit works via a "session". Each person that accesses the app receives their own session. When the user exits the session, whatever occorred during that session is permanently deleted. This is not a full website, there is no database to store your data.  
+It is first necessary to explain that streamlit works via a "session". Each person that accesses the app receives their own session. When the user exits the session, whatever occorred during that session is permanently deleted. This is not a full website, there is no database to store your data.<br><br>
 With that said, there are three ways to access data:
 1. You scrape it yourself, the data is stored in the session and you can use it in the analytical tool.
 2. You scrape it yourself, you download the .PKL file, then come back later to a new session and upload it to the analytical tool.
@@ -85,6 +85,7 @@ background-size: 100%;
 background-position: top left;
 background-repeat: no-repeat;
 background-attachment: local;
+background-size: cover
 }}
 [data-testid="stHeader"] {{
 background: rgba(0,0,0,0);
