@@ -6,9 +6,9 @@
 # Purpose
 Giza is a data analysis tool that allows users of the popular rock climbing website [Mountain Project](https://www.mountainproject.com/) to discover deeper insight into their past performance and potential future climbs.
 
-Mountain Project aggregates user data to provide information about specific climbs. It informs the user on the location, difficulty, length and required gear. It also allows images to be posted, provides an area for users to provide opinions / warnings, and pools data on user performance for each climb.
+Mountain Project aggregates user data to provide information about specific climbs. It informs the user on the location, difficulty, length and required gear. It also allows images to be posted, provides an area for users to post opinions / warnings, and pools data on user performance for each climb.
 
-Users typically have two lists. A tick list is essentially a diary of the climbs the user has attempted and provides details on when the climb was done, whether the climber was successful, and any other notes. A To-Do list is simply a list of climbs the user would like to do in the future.
+Users typically have two lists. A "tick" list is a diary of the climbs the user has attempted and provides details on when the climb was done, whether the climber was successful, and any other notes. A "to-do" list is simply a list of climbs the user would like to climb in the future.
 
 From these two lists there arises two inherent use cases. A tick list allows a user to analyze their past performance, and a to-do list helps a climber find their next climb. While Mountain Project provides some tools to aid in these goals, they are limited in their scope and usability.
 
@@ -18,7 +18,7 @@ Giza provides three primary features that Mountain Project currently lacks:
 3. Provides filterable plots to visualize metrics and performance.
 
 # Usage
-You can access the web app using the badge at the top of the readme.
+You can access the web app [here](https://giza-levyb.streamlit.app/) or with the badge at the top of the readme.
 
 If you are unfamiliar with climbing terminology, please refer to this [explainer](https://www.thecrag.com/en/article/ticktypes).
 
@@ -45,7 +45,7 @@ Giza adds multiple new metrics gathered from tick data. They are:
 * **Repeat Sender Ratio** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule a value above 1.2 is notable.
 
 # Built With
-Libaries:
+Libraries:
 * [Pandas](https://github.com/pandas-dev/pandas) and [Numpy](https://github.com/numpy/numpy) - Basic data analysis libraries
 * [Plotly](https://github.com/plotly) - Plotting and visualization
 * [Requests](https://github.com/psf/requests) - HTTP requests
