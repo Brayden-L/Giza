@@ -1,7 +1,8 @@
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode
 import streamlit_nested_layout
-from unique_route_handling import *
+from unique_route_functions import *
+from st_blend_functions import uniqclean_ticktodo, scrape_ticktodo
 from long_strs import scrape_explainer
 from datetime import date
 import pickle
@@ -40,18 +41,14 @@ with col1:
         st.session_state.exp_button_state = True
         with st.spinner("Downloading"):
             if st.session_state.list_type == "Ticks":
-                st.session_state.df_usend, error_message = download_routelist('tick', upload_link)
+                st.session_state.df_usend, error_message = download_routelist('tick', upload_link) #func
             if st.session_state.list_type == "ToDos":
-                st.session_state.df_usend, error_message = download_routelist('todo', upload_link)
+                st.session_state.df_usend, error_message = download_routelist('todo', upload_link) #func
             if error_message:
                 st.error(error_message)
             else:
                 st.session_state.df_usend = data_standardize(st.session_state.df_usend)
-                if st.session_state.list_type == "Ticks": # If ticks, special clean required
-                    st.session_state.df_usend_uniq = user_uniq_clean(st.session_state.df_usend)
-                if st.session_state.list_type == "ToDos": # If todos, relabel necessary
-                    st.session_state.df_usend_uniq = st.session_state.df_usend.copy()
-                st.session_state.df_usend_uniq = route_length_fixer(st.session_state.df_usend_uniq, 'express')
+                st.session_state.df_usend_uniq = uniqclean_ticktodo(df=st.session_state.df_usend, type=st.session_state.list_type) #func
                 st.session_state.scrape_button_state = False
                 st.success("Download Successful", icon="✅")
 
@@ -65,39 +62,29 @@ with col2:
         st.markdown(f"Estimated Scrape Time: {(2+(st.session_state.scrape_cutoff/45)):.0f}min")
     if st.button(f"Scrape {st.session_state.list_type}", disabled=st.session_state.scrape_button_state):
         st.session_state.exp_button_state = False
-        st.session_state.df_usend_uniq.drop(st.session_state.df_usend_uniq.iloc[st.session_state.scrape_cutoff:].index, inplace=True)
-        st.session_state.df_usend = st.session_state.df_usend[st.session_state.df_usend['Route'].isin(st.session_state.df_usend_uniq['Route'])]
-        st.session_state.df_usend_uniq = routescrape_syncro(st.session_state.df_usend_uniq)
-        if st.session_state.list_type == "Ticks": # if ticks, need to get default pitch numbers
-            st.session_state.df_usend_uniq = extract_default_pitch(st.session_state.df_usend_uniq)
-        st.session_state.df_usend_uniq = assign_spmp(st.session_state.df_usend_uniq)
-        st.session_state.df_usend_uniq = extract_tick_details(st.session_state.df_usend_uniq)
-        st.session_state.df_usend_uniq = tick_analysis(st.session_state.df_usend_uniq)
+        st.session_state.df_usend_uniq.drop(st.session_state.df_usend_uniq.iloc[st.session_state.scrape_cutoff:].index, inplace=True) # Apply filtering
+        st.session_state.df_usend = st.session_state.df_usend[st.session_state.df_usend['Route'].isin(st.session_state.df_usend_uniq['Route'])] # This applies the filter to df_usend too so it matches the filtering done to the unique list
+        st.session_state.df_usend_uniq, scrape_stats = scrape_ticktodo(st.session_state.df_usend_uniq, type=st.session_state.list_type, strip=True) #func
         with col3:
-            failed_mainscrape = st.session_state.df_usend_uniq["Re Mainpage"].isna().sum()
-            failed_statscrape = st.session_state.df_usend_uniq["Re Statpage"].isna().sum()
-            failed_mainscrape_list = st.session_state.df_usend_uniq.loc[(st.session_state.df_usend_uniq['Re Mainpage'].isna())]['Route']
-            failed_statscrape_list = st.session_state.df_usend_uniq.loc[(st.session_state.df_usend_uniq['Re Statpage'].isna())]['Route']
-            scrape_failrate = (1-((failed_mainscrape+failed_statscrape)/(2*numrows)))*100
-            if failed_mainscrape+failed_statscrape == 0:
+            if scrape_stats['nfail_mainscr']+scrape_stats['nfail_statscr'] == 0:
                 col2.success(f"Scrape 100% Successful | Continue To Analysis", icon="✅")
             else:
                 st.session_state.scrape_button_state = True
-                col2.warning(f"Scrape Completed With Missing Values ({scrape_failrate:.2f}% Success Rate | You May Continue To Analysis)", icon="⚠️")
+                col2.warning(f"Scrape Completed With Missing Values ({scrape_stats['scrape_failrate']:.2f}% Success Rate | You May Continue To Analysis)", icon="⚠️")
                 col1, col2 = st.columns([1,1])
                 with col1:
-                    st.warning(f"{failed_mainscrape} failed mainpage scrapes")
-                    failed_mainscrape_list
+                    st.warning(f"{scrape_stats['nfail_mainscr']} failed mainpage scrapes")
+                    scrape_stats['failed_mainscrape_list']
                 with col2:
-                    st.warning(f"{failed_statscrape} failed statpage scrapes")
-                    failed_statscrape_list
+                    st.warning(f"{scrape_stats['nfail_statscr']} failed statpage scrapes")
+                    scrape_stats['failed_statscrape_list']
                 st.info("To retry, redownload the data then scrape again.", icon="ℹ️")
-        st.session_state.df_usend_uniq.drop(columns=['Tick Counts', 'Re Mainpage', 'Re Statpage', 'Route Ticks'], inplace=True) # This drastically cuts down on the file size once the analysis is finished.
 
 ### Session state handling
 # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session. We must package it for session state and file export.
-st.session_state.upload_link_ref_str = '/'.join(upload_link.split('/')[4:6])
-scrape_details = {'route_list_type': st.session_state.list_type.lower(), 'username': st.session_state.upload_link_ref_str, 'date_scraped': date.today()}
+# Variables are sent in many different directions, as this section has to handle two different types of dataframe to handle, and send it to both the session.state and package it up for download.
+st.session_state.upload_link_ref_str = '/'.join(upload_link.split('/')[4:6]) # This extracts the user ID and user name from the URL
+scrape_details = {'route_list_type': st.session_state.list_type.lower(), 'username': st.session_state.upload_link_ref_str, 'date_scraped': date.today()} # This is the full "package", it provides the dataframes as well as some meta data.
 if st.session_state.list_type == "Ticks":
     st.session_state.df_usend_uniq_ticks = st.session_state.df_usend_uniq.copy()
     st.session_state.tick_scrape_output = [st.session_state.df_usend_uniq_ticks, scrape_details, st.session_state.df_usend]

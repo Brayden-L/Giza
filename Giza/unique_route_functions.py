@@ -1,3 +1,5 @@
+# These functions are intended to be applied to BOTH unique route lists generated from "to do" and "tick" datasets.
+
 # %%
 # Data Science Related
 import numpy as np
@@ -14,90 +16,19 @@ import cchardet
 import re
 
 # General
-import pyinputplus as pyip
 import datetime as dt
 from stqdm import stqdm
+
+# Other Project Files
+from constants import *
 
 # Initializations
 stqdm.pandas()
 
 # %%
-# Defines Project Wide Constants
-
-YDS_GRADES_FULL = ['5.0', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7', '5.7+', '5.8-', '5.8', '5.8+', '5.9-', '5.9', '5.9+',
-                   '5.10a', '5.10-', '5.10a/b', '5.10b', '5.10', '5.10b/c', '5.10c', '5.10+', '5.10c/d', '5.10d', '5.11a', '5.11-', '5.11a/b', '5.11b', '5.11', '5.11b/c', '5.11c', '5.11+', '5.11c/d', '5.11d',
-                   '5.12a', '5.12-', '5.12a/b', '5.12b', '5.12', '5.12b/c', '5.12c', '5.12+', '5.12c/d', '5.12d', '5.13a', '5.13-', '5.13a/b', '5.13b', '5.13', '5.13b/c', '5.13c', '5.13+', '5.13c/d', '5.13d',
-                   '5.14a', '5.14-', '5.14a/b', '5.14b', '5.14', '5.14b/c', '5.14c', '5.14+', '5.14c/d', '5.14d', '5.15a', '5.15-', '5.15a/b', '5.15b', '5.15', '5.15b/c' '5.15c', '5.15+', '5.15c/d', '5.15d']
-YDS_GRADES_LETTER = ['5.0', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7', '5.8', '5.9', '5.10a', '5.10b', '5.10c', '5.10d', '5.11a', '5.11b', '5.11c', '5.11d',
-                     '5.12a', '5.12b', '5.12c', '5.12d', '5.13a', '5.13b', '5.13c', '5.13d', '5.14a', '5.14b', '5.14c', '5.14d', '5.15a', '5.15b', '5.15c', '5.15d']
-YDS_GRADES_SIGN = ['5.0', '5.1', '5.2', '5.3', '5.4', '5.5', '5.6', '5.7', '5.7+', '5.8-', '5.8', '5.8+', '5.9-', '5.9', '5.9+', '5.10-', '5.10', '5.10+',
-                   '5.11-', '5.11', '5.11+', '5.12-', '5.12', '5.12+', '5.13-', '5.13', '5.13+', '5.14-', '5.14', '5.14+', '5.15-', '5.15', '5.15+']
-
-V_GRADES_FULL = ['V-easy', 'V0-', 'V0', 'V0+', 'V0-1', 'V1-', 'V1', 'V1+', 'V1-2', 'V2-', 'V2', 'V2+', 'V2-3', 'V3-', 'V3', 'V3+', 'V3-4', 'V4-', 'V4', 'V4+', 'V4-5', 'V5-', 'V5', 'V5+', 'V5-6',
-                 'V6-', 'V6', 'V6+', 'V6-7', 'V7-', 'V7', 'V7+', 'V7-8', 'V8-', 'V8', 'V8+', 'V8-9', 'V9-', 'V9', 'V9+', 'V9-10', 'V10-', 'V10', 'V10+', 'V10-11', 'V11-', 'V11', 'V11+', 'V11-12',
-                 'V12-', 'V12', 'V12+', 'V12-13', 'V13-', 'V13', 'V13+', 'V13-14', 'V14-', 'V14', 'V14+', 'V14-15', 'V15-', 'V15', 'V15+', 'V15-16', 'V16-', 'V16', 'V16+', 'V16-17', 'V17-', 'V17']
-V_GRADES_SIGN = ['V-easy', 'V0-', 'V0', 'V0+', 'V1-', 'V1', 'V1+', 'V2-', 'V2', 'V2+', 'V3-', 'V3', 'V3+', 'V4-', 'V4', 'V4+', 'V5-', 'V5', 'V5+', 'V6-', 'V6', 'V6+', 'V7-', 'V7', 'V7+', 'V8-', 'V8', 'V8+',
-                 'V9-', 'V9', 'V9+', 'V10-', 'V10', 'V10+', 'V11-', 'V11', 'V11+', 'V12-', 'V12', 'V12+', 'V13-', 'V13', 'V13+', 'V14-', 'V14', 'V14+', 'V15-', 'V15', 'V15+', 'V16-', 'V16', 'V16+', 'V17-', 'V17']
-V_GRADES_FLAT = ['V-easy', 'V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7',
-                 'V8', 'V9', 'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17']
-
-GRADES_SUPER = YDS_GRADES_FULL + V_GRADES_FULL
-
-RISK_GRADES = ['PG', 'PG13', 'R', 'X']
-ROUTE_TYPES = ['Boulder', 'Sport', 'Trad']
-
-CLEAN_SEND = ['Onsight', 'Flash', 'Redpoint', 'Pinkpoint', 'Send']
-CLEAN_SEND_FIRST = ['Onsight', 'Flash']
-CLEAN_SEND_WORKED = ['Redpoint', 'Pinkpoint']
-TICK_OPTIONS = ['Solo', 'TR', 'Follow', 'Lead', 'Fell/Hung',
-                'Onsight', 'Flash', 'Redpoint', 'Pinkpoint', 'Send', 'Attempt']
-
-# Roped grade homogenization
-# Letter
-rgrademoderatemap = {'5.6-': '5.6', '5.6+': '5.6', '5.7-': '5.7',
-                     '5.7+': '5.7', '5.8-': '5.8', '5.8+': '5.8', '5.9-': '5.9', '5.9+': '5.9'}
-rgradedownmap = {'5.10a/b': '5.10a', '5.10-': '5.10a', '5.10b/c': '5.10b', '5.10': '5.10b', '5.10c/d': '5.10c', '5.10+': '5.10c',
-                 '5.11a/b': '5.11a', '5.11-': '5.11a', '5.11b/c': '5.11b', '5.11': '5.11b', '5.11c/d': '5.11c', '5.11+': '5.11c',
-                 '5.12a/b': '5.12a', '5.12-': '5.12a', '5.12b/c': '5.12b', '5.12': '5.12b', '5.12c/d': '5.12c', '5.12+': '5.12c',
-                 '5.13a/b': '5.13a', '5.13-': '5.13a', '5.13b/c': '5.13b', '5.13': '5.13b', '5.13c/d': '5.13c', '5.13+': '5.13c',
-                 '5.14a/b': '5.14a', '5.14-': '5.14a', '5.14b/c': '5.14b', '5.14': '5.14b', '5.14c/d': '5.14c', '5.14+': '5.14c',
-                 '5.15a/b': '5.15a', '5.15-': '5.15a', '5.15b/c': '5.15b', '5.15': '5.15b', '5.15c/d': '5.15c', '5.15+': '5.15c',
-                 }
-rgradeupmap = {'5.10a/b': '5.10b', '5.10-': '5.10b', '5.10b/c': '5.10c', '5.10': '5.10c', '5.10c/d': '5.10d', '5.10+': '5.10d',
-               '5.11a/b': '5.11b', '5.11-': '5.11b', '5.11b/c': '5.11c', '5.11': '5.11c', '5.11c/d': '5.11d', '5.11+': '5.11d',
-               '5.12a/b': '5.12b', '5.12-': '5.12b', '5.12b/c': '5.12c', '5.12': '5.12c', '5.12c/d': '5.12d', '5.12+': '5.12d',
-               '5.13a/b': '5.13b', '5.13-': '5.13b', '5.13b/c': '5.13c', '5.13': '5.13c', '5.13c/d': '5.13d', '5.13+': '5.13d',
-               '5.14a/b': '5.14b', '5.14-': '5.14b', '5.14b/c': '5.14c', '5.14': '5.14c', '5.14c/d': '5.14d', '5.14+': '5.14d',
-               '5.15a/b': '5.15b', '5.15-': '5.15b', '5.15b/c': '5.15c', '5.15': '5.15c', '5.15c/d': '5.15d', '5.15+': '5.15d',
-               }
-
-# Sign
-rgradecompmap = {'5.10a': '5.10-', '5.10a/b': '5.10-', '5.10b': '5.10', '5.10c': '5.10', '5.10b/c': '5.10', '5.10d': '5.10+', '5.10c/d': '5.10+',
-                 '5.11a': '5.11-', '5.11a/b': '5.11-', '5.11b': '5.11', '5.11c': '5.10', '5.11b/c': '5.11', '5.11d': '5.11+', '5.11c/d': '5.11+',
-                 '5.12a': '5.12-', '5.12a/b': '5.12-', '5.12b': '5.12', '5.12c': '5.10', '5.12b/c': '5.12', '5.12d': '5.12+', '5.12c/d': '5.12+',
-                 '5.13a': '5.13-', '5.13a/b': '5.13-', '5.13b': '5.13', '5.13c': '5.10', '5.130b/c': '5.13', '5.13d': '5.13+', '5.13c/d': '5.13+',
-                 '5.14a': '5.14-', '5.14a/b': '5.14-', '5.14b': '5.14', '5.14c': '5.10', '5.14b/c': '5.14', '5.14d': '5.14+', '5.14c/d': '5.14+',
-                 }
-
-# Boulder grade homogenization
-# Flat
-bgradedownmap1 = {'V0-1': 'V0', 'V1-2': 'V1', 'V2-3': 'V2', 'V3-4': 'V3', 'V4-5': 'V4', 'V5-6': 'V5', 'V6-7': 'V6', 'V7-8': 'V7', 'V8-9': 'V8', 'V9-10': 'V9', 'V10-11': 'V10', 'V11-12': 'V11',
-                  'V12-13': 'V12', 'V13-14': 'V13', 'V14-15': 'V14', 'V15-16': 'V15', 'V16-17': 'V16'}
-bgradeupmap1 = {'V0-1': 'V1', 'V1-2': 'V2', 'V2-3': 'V3', 'V3-4': 'V4', 'V4-5': 'V5', 'V5-6': 'V6', 'V6-7': 'V7', 'V7-8': 'V8', 'V8-9': 'V9', 'V9-10': 'V10', 'V10-11': 'V11', 'V11-12': 'V12',
-                'V12-13': 'V13', 'V13-14': 'V14', 'V14-15': 'V15', 'V15-16': 'V16', 'V16-17': 'V17'}
-bgradeconmap1 = {'V0-': 'V0', 'V0+': 'V0', 'V1-': 'V1', 'V1+': 'V1', 'V2-': 'V2', 'V2+': 'V2', 'V3-': 'V3', 'V3+': 'V3', 'V4-': 'V4', 'V4+': 'V4', 'V5-': 'V5', 'V5+': 'V5', 'V6-': 'V6', 'V6+': 'V6', 'V7-': 'V7', 'V7+': 'V7', 'V8-': 'V8', 'V8+': 'V8',
-                 'V9-': 'V9', 'V9+': 'V9', 'V10-': 'V10', 'V10+': 'V10', 'V11-': 'V11', 'V11+': 'V11', 'V12-': 'V12', 'V12+': 'V12', 'V13-': 'V13', 'V13+': 'V13', 'V14-': 'V14', 'V14+': 'V14', 'V15-': 'V15', 'V15+': 'V15', 'V16-': 'V16', 'V16+': 'V16',
-                 'V17-': 'V17', 'V17+': 'V17'}
-# Sign
-bgradedownmap2 = {'V0-1': 'V0+', 'V1-2': 'V1+', 'V2-3': 'V2+', 'V3-4': 'V3+', 'V4-5': 'V4+', 'V5-6': 'V5+', 'V6-7': 'V6+', 'V7-8': 'V7+', 'V8-9': 'V8+', 'V9-10': 'V9+', 'V10-11': 'V10+', 'V11-12': 'V11+', 'V12-13': 'V12+', 'V13-14': 'V13+',
-                  'V14-15': 'V14+', 'V15-16': 'V15+', 'V16-17': 'V16+'}
-bgradeupmap2 = {'V0-1': 'V1-', 'V1-2': 'V2-', 'V2-3': 'V3-', 'V3-4': 'V4-', 'V4-5': 'V5-', 'V5-6': 'V6-', 'V6-7': 'V7-', 'V7-8': 'V8-', 'V8-9': 'V9-', 'V9-10-': 'V10', 'V10-11': 'V11-', 'V11-12': 'V12-', 'V12-13': 'V13-', 'V13-14': 'V14-',
-                'V14-15': 'V15-', 'V15-16': 'V16-', 'V16-17': 'V17-'}
-
-# %%
 def download_routelist(upload_type, link):
     """
-    Downloads a tick or todo list from the MP website.
+    Downloads a tick or todo list from the MP website. Takes a link string and returns a dataframe constructed from the requested .CSV as well as an error string if applicable.
 
     Parameters
     ----------
@@ -164,24 +95,26 @@ def data_standardize(df_source):
     def rem_route_el_from_list(ousted, seperator):
         el_rem_subset = df_source['Route Type'].str.contains(ousted) == True
         df_source.loc[el_rem_subset, 'Route Type'] = df_source[el_rem_subset]['Route Type'].apply(lambda row: [val for val in row.split(seperator) if val != ousted]).apply(lambda x: ", ".join(x))
-
     rem_route_el_from_list('Alpine', ', ')
     rem_route_el_from_list('TR', ', ')
 
+    # Route Type to categorical type
     routetype_cat = CategoricalDtype(categories=ROUTE_TYPES)
     df_source['Route Type'] = df_source['Route Type'].astype(routetype_cat)
     
-    # Extract route unique identifier from URL and create a new column for it.
+    # Extract route unique identifier from URL and create a new column for it. This makes for a reliable unique key even if the route name changes.
     if 'Route ID' not in df_source.columns:
         df_source.insert(len(df_source.columns),'Route ID','')
     df_source['Route ID'] = df_source['URL'].apply(lambda x: int(x.split('/')[4]))
 
     # Change YDS-Vgrade combos to just Vgrade. They are most likely boulders, so a bouldering grade is relevant.
+    # TODO a more robust assignment would check listed pitches and length to see if it is more likely to be a route or a boulder. These are rare enough it is not worth the effort for now.
     subset = df_source['Rating'].apply(lambda row: [val for val in row.split() if val in V_GRADES_FULL]).astype(bool)  & df_source['Rating'].apply(lambda row: [val for val in row.split() if val in YDS_GRADES_FULL]).astype(bool) == True
     df_source.loc[subset, 'Rating'] = df_source[subset]['Rating'].apply(lambda x: x.split()[1])
     df_source.loc[subset, 'Route Type'] = 'Boulder'
 
     # Seperate risk rating to new column
+    # This allows us to filter by risk, and also strips the rating column to just it's difficulty component which is the important part.
     if 'Rating' not in df_source.columns:
         df_source.insert(df_source.columns.get_loc('Rating')+1,'Risk','')
     risk_cat = CategoricalDtype(categories=RISK_GRADES, ordered=True)
@@ -197,7 +130,7 @@ def data_standardize(df_source):
     # Your Stars NaN type is -1 for some reason, change it to an actual nonetype
     df_source.loc[df_source['Your Stars'] == -1, 'Your Stars'] = None
     
-    # Base Location is a useful column
+    # Base Location is a useful column for filtering as it is the only location tier that is guaranteed to be consistent across zones.
     if 'Base Location' not in df_source.columns:
         df_source.insert(len(df_source.columns),'Base Location','')
     df_source['Base Location'] = df_source['Location'].apply(lambda x: x.split('>')[0])
@@ -207,7 +140,7 @@ def data_standardize(df_source):
 # %%
 def route_length_fixer(df_source, input_type):
     """"
-    Fixes route length outliers and missing values.
+    Fixes route length outliers and missing values. Manual input is currently disabled
     
     Parameters:
     -----------
@@ -221,16 +154,16 @@ def route_length_fixer(df_source, input_type):
     df_source : df
         Original df with fully defined route lengths
     """
-### Handle route length outliers and NaNs
-    # Define roped and bouldering specific subset
+    # Handle route length outliers and NaNs
+    ## Define roped and bouldering specific subset
     roped_subset = (df_source['Route Type'] == 'Sport') | (df_source['Route Type'] == 'Trad')
     boulder_subset = (df_source['Route Type'] == 'Boulder')
 
     ROPED_MIN_LENGTH = 15
-    ROPED_MAX_LENGTH = 4500 #"Trango Towers" are 4,300' tall
+    ROPED_MAX_LENGTH = 4500 # "Trango Towers" are 4,300' tall
     ROPED_DEFAULT_LENGTH = 70
     BOULDER_MIN_LENGTH = 1
-    BOULDER_MAX_LENGTH = 55 #"Too Tall to Fall" is 50'
+    BOULDER_MAX_LENGTH = 55 # "Too Tall to Fall" is 50'
     BOULDER_DEFAULT_LENGTH = 12
 
     # Fix outliers
@@ -239,8 +172,8 @@ def route_length_fixer(df_source, input_type):
         for loop_count, (index, data) in enumerate(length_outliers.iterrows()):
             if input_type == 'express':
                 updated_length = deflength
-            if input_type == 'manual':
-                updated_length = pyip.inputNum(f"[{loop_count+1}/{length_outliers.shape[0]}] Outlier Detected, Possible Bad Info. Input Corrected Length for\nRoute: {data['Route']}\nLocation: {'>'.join(data['Location'].split('>')[-3:])}\nCurrently: {data['Length']}ft\n", min=minlength, max=maxlength)
+            # if input_type == 'manual':
+            #     pass
             dataframe.at[index, 'Length'] = updated_length
         return dataframe
 
@@ -250,8 +183,8 @@ def route_length_fixer(df_source, input_type):
         for loop_count, (index, data) in enumerate(length_missing.iterrows()):
             if input_type == 'express':
                 updated_length = deflength
-            if input_type == 'manual':
-                updated_length = pyip.inputNum(f"[{loop_count+1}/{length_missing.shape[0]}] Input Estimated Length for\nRoute: {data['Route']}\nLocation: {'>'.join(data['Location'].split('>')[-3:])}\n", min=minlength, max=maxlength)
+            # if input_type == 'manual':
+            #     pass
             dataframe.at[index, 'Length'] = updated_length
         return dataframe
 
@@ -271,14 +204,14 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
     ----------
     df_source : df
         Original route df.
-    r_type : str {letter, sign}
+    r_type : str [letter, sign]
         YDS letter or sign style grades.
-    r_direction : str {up, down, even_rand, manual}
+    r_direction : str [up, down, even_rand, manual]
         Unused if r_type='letter'. Which way to assign grades. even_rand rounds a randomly selected half up and the randomly remaining half down.
-    b_type : str {flat, sign}
+    b_type : str [flat, sign]
         Vgrade flat grades or include sign grades.
-    b_direction : str {up, down, even_rand, manual}
-        Same as r_direction
+    b_direction : str [up, down, even_rand, manual]
+        Used for both b_type.
     
     Return
     ------
@@ -333,52 +266,39 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
     #Boulder Grades
     if b_type == 'flat':
         # Remove all + and - grades
-        grade_change_subset = rating_isolate.isin(list(bgradeconmap1.keys()))
-        df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeconmap1)
+        grade_change_subset = rating_isolate.isin(list(bgradeconmapflat.keys()))
+        df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeconmapflat)
 
         if b_direction == 'up':
-            grade_change_subset = rating_isolate.isin(list(bgradeupmap1.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmap1)
+            grade_change_subset = rating_isolate.isin(list(bgradeupmapflat.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmapflat)
         if b_direction == 'down':
-            grade_change_subset = rating_isolate.isin(list(bgradedownmap1.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap1)
+            grade_change_subset = rating_isolate.isin(list(bgradedownmapflat.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmapflat)
         if b_direction == 'even_rand':
-            grade_split(bgradeupmap1,bgradedownmap1)
+            grade_split(bgradeupmapflat,bgradedownmapflat)
         if b_direction == 'manual':
-            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmap1.keys()))]
+            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmapflat.keys()))]
             for loop_count, (index, data) in enumerate(needs_grade_corr.iterrows()):
                 updated_grade = pyip.inputChoice(prompt=f"[{loop_count+1}/{needs_grade_corr.shape[0]}] Input Grade Correction For: {data['Route'].title()}:\n", choices=V_GRADES_FLAT)
                 df_source.at[index, 'Rating'] = updated_grade
 
     if b_type =='sign':
         if b_direction == 'up':
-            grade_change_subset = rating_isolate.isin(list(bgradeupmap2.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmap2)
+            grade_change_subset = rating_isolate.isin(list(bgradeupmapsign.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradeupmapsign)
         if b_direction == 'down':
-            grade_change_subset = rating_isolate.isin(list(bgradedownmap2.keys()))
-            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmap2)
+            grade_change_subset = rating_isolate.isin(list(bgradedownmapsign.keys()))
+            df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmapsign)
         if b_direction == 'even_rand':
-            grade_split(bgradeupmap2,bgradedownmap2)
+            grade_split(bgradeupmapsign,bgradedownmapsign)
         if b_direction == 'manual':
-            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmap2.keys()))]
+            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmapsign.keys()))]
             for loop_count, (index, data) in enumerate(needs_grade_corr.iterrows()):
                 updated_grade = pyip.inputChoice(prompt=f"[{loop_count+1}/{needs_grade_corr.shape[0]}] Input Grade Correction For: {data['Route'].title()}:\n", choices=V_GRADES_FLAT)
                 df_source.at[index, 'Rating'] = updated_grade
     
     return df_source
-
-# %%
-def user_uniq_clean(df_source):
-    """
-    Creatres a unique dataframe of routes from a tick list. It has some irrelevant columns left over that should be removed.
-    input df, return df.
-    """
-    df_output = df_source.drop_duplicates(subset="Route ID")
-    col_list = ['Date', 'Notes', 'Your Stars', 'Style', 'Lead Style']
-    for col in col_list:
-        if col in df_output.columns:
-            df_output.drop(columns=col, inplace=True)
-    return df_output
 
 # %%
 def routescrape_syncro(df_source, retries=3):
@@ -459,6 +379,7 @@ def assign_spmp(df_source):
     df
         output df with new SP and MP tag column
     """
+    # This looks like something that should happen at the data cleaning stage, but since tick list data requires official pitch counts to be extracted, it must be a seperate function after the extract is applied.
     if 'SP/MP' not in df_source.columns:
         df_source['SP/MP'] = None
     df_source.loc[(df_source['Route Type'].isin(['Sport', 'Trad'])) & (df_source['Pitches'] == 1), 'SP/MP'] = 'SP'
@@ -497,6 +418,7 @@ def extract_tick_details(df_source):
         Comment : str
             Tick comment
         """
+        # A clean and performant way to construct a dataframe is to append lists and then only turn it into a dataframe at the very end. This is in contrast to appending a dataframe.
         name = []
         namelink = []
         entrydate = []
@@ -570,7 +492,7 @@ def extract_tick_details(df_source):
             # print (len(name),len(namelink),len(entrydate),len(pitches),len(style),len(lead_style),len(comment))
             # print (name,namelink,entrydate,pitches,style,lead_style,comment)
             d = pd.DataFrame({'Username' : name, "User Link" : namelink, "Date": entrydate, "Pitches Ticked": pitches, "Style": style, "Lead Style": lead_style, "Comment": comment})
-            # One last possible error correction, an oomlot injected a "/" into lead style and the regex incidentally detected it
+            # One last possible error correction, I've seen an oomlot injected a "/" into lead style and the regex incidentally detected it
             d.loc[~d['Lead Style'].isin(TICK_OPTIONS), 'Lead Style'] = ''
             # Recast columns to correct data type
             d['Date'] = pd.to_datetime(d['Date'], errors = 'coerce')
@@ -618,12 +540,12 @@ def unpack_style(routeticks, colref, pitchnum):
 
 
 def is_prior_sender(df_source):
-    """Takes a dataframe of a single given users ticks, outputs str of user if user did not onsight/flash prior to RP
+    """Takes a dataframe of a single given users ticks on a specific climn, outputs str of user name if user redpointed. Ignores users who onsighted prior to a redpoint. This allows creation of a list of people who "worked" a route clean.
 
     Parameters
     ----------
     df_source : df
-        A given users ticks
+        A given users ticks for a single specific climb
 
     Returns
     -------
@@ -631,7 +553,7 @@ def is_prior_sender(df_source):
         Returns name of user if valid, returns None if user has prior onsight/flash
     """
     clean_send_dates = df_source[df_source['Lead Style'].isin(CLEAN_SEND_WORKED)]['Date']
-    if clean_send_dates.isna().any(): # Some ticks have NaT improper dates, ignore the ticker with bad data
+    if clean_send_dates.isna().any(): # Some ticks have NaT improper dates (Ex: 20222/01/011), ignore the ticker with bad data. This is a rare edge case but I've seen it happen.
         return None
     else:
         firstrp_index = clean_send_dates.idxmin()
@@ -644,12 +566,14 @@ def is_prior_sender(df_source):
 
 
 def count_attempt2rp(df_source, pitchnum):
-    """Takes a dataframe of a single given users ticks, outputs number of attempts to first rp
+    """Takes a dataframe of a single given users ticks on a specific climb, outputs number of attempts to first redpoint.
 
     Parameters
     ----------
     df_source : df
-        A given users ticks
+        A given users ticks for a single specific climb
+    pitchnum : int
+        number of pitches in route
 
     Returns
     -------
@@ -673,6 +597,8 @@ def analyze_tick_counts(routeticks, pitchnum):
     ----------
     df_source : df
         Source dataframe
+    pitchnum : int
+        Number of pitches in route
     
     Return
     ------
@@ -681,11 +607,15 @@ def analyze_tick_counts(routeticks, pitchnum):
     num_tickers : int
         Number of users who ticked
     lead_ratio : float
-        Ratio of lead ticks to total ticks with non-null style type
+        Lead Ticks / total non-null ticks
     os_ratio : float
-        Ratio of onsight plus flash ticks to total ticks with non-null lead-style type
+        (onsight ticks + flash ticks) / (total non-null ticks)
+    repeat_senders : float
+        The mean amount of times users send a given climb clean. Minimum 1.
+    rpnattempt_mean : float
+        Number of attempts it takes the average climber who worked the route clean. Minimum 1.
     tick_counts : series
-        series of count of each type of tick
+        Series with index as a string of tick type and the values as integers of counts of those types in the dataframe.
     """
     if (routeticks is None) or (len(routeticks.index) == 0): # If list is unavailable or empty
         num_ticks = num_tickers = lead_ratio = os_ratio = repeat_senders = rpnattempt_mean = tick_counts = float('NaN')
@@ -698,7 +628,7 @@ def analyze_tick_counts(routeticks, pitchnum):
         tick_cat = CategoricalDtype(categories=TICK_OPTIONS)
         tick_type_list = pd.Series(unpack_style(routeticks, 'Style', pitchnum) + unpack_style(routeticks, 'Lead Style', pitchnum), dtype=tick_cat)
         tick_counts = tick_type_list.value_counts()
-        repeat_senders = routeticks[routeticks['Lead Style'].isin(CLEAN_SEND)].groupby('Username')['Lead Style'].count().mean() # It is assumed that each clean send gets its own tick.
+        repeat_senders = routeticks[routeticks['Lead Style'].isin(CLEAN_SEND)].groupby('Username')['Lead Style'].count().mean() # It is assumed that each clean send gets its own tick. For example that a 2 pitch redpoint tick on a single pitch climb is one fell/hung into a redpoint, not two consecutive redpoints. Few people redpoint a climb multiple times in a session.
         
         rp_unames = routeticks[routeticks['Lead Style'].isin(CLEAN_SEND_WORKED)]['Username'] # List of names of those who rp'd
         if rp_unames.empty: # if the list exists, but has no redpointers, we want to assign NaN
@@ -715,7 +645,7 @@ def analyze_tick_counts(routeticks, pitchnum):
     return pd.Series([num_ticks, num_tickers, lead_ratio, os_ratio, repeat_senders, rpnattempt_mean, tick_counts])
 
 
-def tick_analysis(df_source):
+def climb_tick_analysis(df_source):
     """
     Adds tick analysis columns to dataframe
 
@@ -729,8 +659,7 @@ def tick_analysis(df_source):
     df
         same df with added columns
     """
-    ### Analyzes tick sub dataframe to create meaningful metrics.
-    
+    # Analyzes tick sub dataframe to create meaningful metrics.
     stqdm.pandas(desc="(5/5) Constructing Tick Analytics")
     df_source[['Num Ticks', 'Num Tickers', 'Lead Ratio', 'OS Ratio', 'Repeat Sender Ratio', 'Mean Attempts To RP', 'Tick Counts']] = df_source.progress_apply(lambda x: analyze_tick_counts(x['Route Ticks'], x['Pitches']), axis=1)
     return df_source
@@ -738,7 +667,7 @@ def tick_analysis(df_source):
 # %%
 @st.experimental_memo
 def unique_route_prefabanalysis(df_source, selected_rgrade_array, selected_bgrade_array, numN):
-    """Creates prefab tables based on tick metrics from source dataframe
+    """Creates prefabricated data tables based on tick metrics from source dataframe
 
     Parameters
     ----------

@@ -1,11 +1,15 @@
+# Streamlit
 import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, JsCode
-import streamlit_nested_layout
-from unique_route_handling import *
-from tick_route_handling import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from aggrid_formats import aggrid_uniq_format, aggrid_tick_format
+import streamlit_nested_layout
+# Other Project Files
+from unique_route_functions import *
+from tick_route_functions import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from long_strs import analysis_explainer
+# Visualization
 import plotly.express as px
+#General
 import os
 from pathlib import Path
 from datetime import date
@@ -93,9 +97,9 @@ if not unique_routes_df.empty:
         with col2:
             boulder_grade_type = st.radio("Boulders", options=['Flat (V4)', 'Sign (V4-)'])
             boulder_round_type = st.radio("Boulder Round Type", options=['Round Evenly By Random', 'Round Up', 'Round Down'], help='Round Evenly By Random rounds up half of the population and rounds down the other half. Which route belongs to which half is random.')
+        # TODO this block could be a function
         gh_key = {'Sign (5.10-)': 'sign', 'Letter (5.10a)': 'letter', 'Sign (V4-)': 'sign', 'Flat (V4)': 'flat', 'Round Evenly By Random': 'even_rand', 'Round Down': 'down', 'Round Up': 'up' }
         grade_settings = [gh_key[route_grade_type], gh_key[route_round_type], gh_key[boulder_grade_type], gh_key[boulder_round_type]]
-        route_grade_array_dict = {'sign': YDS_GRADES_SIGN, 'letter': YDS_GRADES_LETTER}
         unique_routes_df = grade_homo(unique_routes_df, *grade_settings)
         selected_rgrade_array = {'sign': YDS_GRADES_SIGN, 'letter': YDS_GRADES_LETTER}[gh_key[route_grade_type]]
         selected_bgrade_array = {'sign': V_GRADES_SIGN, 'flat': V_GRADES_FLAT}[gh_key[boulder_grade_type]]
@@ -103,40 +107,45 @@ if not unique_routes_df.empty:
     
     ### Filtering
     # Filter widget setup
-    # Enabling the filters to be moved to the sidebar makes the code much less readable but I think it is worth it. I'm not super happy with the overall flow of the code.
     st.header("Filtering")
     move_fil = st.checkbox("Move Filter to Sidebar", help="Filters in the sidebar remove the need to scroll back and forth if you will be tweaking the filter settings a lot. This is at the expense of cramped visuals.")
     df_uniq_fil = unique_routes_df.copy()
     
-    # Routetype and tick filter
-    col1, col2, col3 = st.columns([1.75,0.25,2.75])
-    routetype_options = df_uniq_fil['Route Type'].unique().tolist()
-    routetype_fil_widg_dict = {'label': "Climb Type",
-                               'options': routetype_options,
-                               'default': routetype_options} 
-    numtick_fil_widg_dict = {'label': "Minimum Tick Count Cutoff", 
-                            'min_value': 1,
-                            'value': 30,
-                            'help': "Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff"}
-    if move_fil == True:
-        numtick_fil = st.sidebar.number_input(label=numtick_fil_widg_dict['label'],
-                                        min_value=numtick_fil_widg_dict['min_value'],
-                                        value=numtick_fil_widg_dict['value'],
-                                        help=numtick_fil_widg_dict['help'])
-        routetype_fil = st.sidebar.multiselect(label=routetype_fil_widg_dict['label'],
-                                               options=routetype_fil_widg_dict['options'],
-                                               default=routetype_fil_widg_dict['default'])
+    # This allows the filter to be drawn in wide on the page itself, or on the sidebar.
     if move_fil == False:
-        numtick_fil = col1.number_input(label=numtick_fil_widg_dict['label'],
-                                min_value=numtick_fil_widg_dict['min_value'],
-                                value=numtick_fil_widg_dict['value'],
-                                help=numtick_fil_widg_dict['help'])
-        routetype_fil = col1.multiselect(label=routetype_fil_widg_dict['label'],
-                                         options=routetype_fil_widg_dict['options'],
-                                         default=routetype_fil_widg_dict['default'])
+        fil_cont = st.container()
+        r1col1, r1col2, r1col3 = fil_cont.columns([1.75,0.25,2.75])
+        r2col1, r2col2, r2col3, r2col4 = fil_cont.columns([1.75,0.25,0.5,2.25])
+        r3col1, r3col2 = fil_cont.columns([0.3, 4])
+        r4col1, r4col2, r4col3 = fil_cont.columns([1.75,0.25,2.75])
+        numtick_cont = r1col1.container()
+        routetype_cont = r1col1.container()
+        r_grade_cont = r1col3.container()
+        b_grade_cont = r1col3.container()
+        pitch_cont = r2col1.container()
+        date_type_cont = r2col3.container()
+        date_cont = r2col4.container()
+        loc_tier_cont = r3col1.container()
+        loc_cont = r3col2.container()
+        style_cont = r4col1.container()
+        lead_style_cont = r4col1.container()
+        star_cont = r4col3.container()
+        length_cont = r4col3.container()
+    if move_fil == True:
+        numtick_cont = routetype_cont = r_grade_cont = b_grade_cont = pitch_cont = date_type_cont = date_cont = loc_tier_cont = loc_cont = style_cont = lead_style_cont = star_cont = length_cont = st.sidebar.container()
+    
+    # Tick and Routetype Fil
+    routetype_options = df_uniq_fil['Route Type'].unique().tolist()
+    numtick_fil = numtick_cont.number_input(label="Minimum Tick Count Cutoff",
+                                            value=30,
+                                            help="Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff")
+    routetype_fil = routetype_cont.multiselect(label="Climb Type",
+                                               options=routetype_options,
+                                               default=routetype_options)
 
     # Grade filter
     def grade_filter_align(datalist, orderedlist):
+        """Creates an ordered list of unique ratings that exist in entries that belong to the selected grade array """
         full_list = [i for i in orderedlist if i in datalist['Rating'].unique()]
         if full_list == []:
             trunc_full_list = orderedlist
@@ -146,94 +155,46 @@ if not unique_routes_df.empty:
             trunc_full_list = orderedlist[orderedlist.index(minval) : orderedlist.index(maxval)+1]
         return trunc_full_list, (minval, maxval)
     r_grade_fil, b_grade_fil = [], []
-    r_grade_fil_widg_dict = {'label': "Route Grade Filter",
-                            'options': grade_filter_align(df_uniq_fil, selected_rgrade_array)[0],
-                            'value': grade_filter_align(df_uniq_fil, selected_rgrade_array)[1]}
-    b_grade_fil_widg_dict ={'label': "Boulder Grade Filter",
-                            'options': grade_filter_align(df_uniq_fil, selected_bgrade_array)[0],
-                            'value': grade_filter_align(df_uniq_fil, selected_bgrade_array)[1]}
-    
-    if move_fil == True:
-        if any(df_uniq_fil['Rating'].unique().isin(selected_rgrade_array)):
-            r_grade_min, r_grade_max = st.sidebar.select_slider(label=r_grade_fil_widg_dict["label"],
-                                                        options=r_grade_fil_widg_dict["options"],
-                                                        value=r_grade_fil_widg_dict["value"])
-            r_grade_fil = selected_rgrade_array[selected_rgrade_array.index(r_grade_min) : selected_rgrade_array.index(r_grade_max)+1]
-        if any(df_uniq_fil['Rating'].unique().isin(selected_bgrade_array)):
-            b_grade_min, b_grade_max = st.sidebar.select_slider(label=b_grade_fil_widg_dict['label'],
-                                                        options=b_grade_fil_widg_dict['options'],
-                                                        value=b_grade_fil_widg_dict['value'])
-            b_grade_fil = selected_bgrade_array[selected_bgrade_array.index(b_grade_min) : selected_bgrade_array.index(b_grade_max)+1]
-    if move_fil == False:
-        if any(df_uniq_fil['Rating'].unique().isin(selected_rgrade_array)):
-            r_grade_min, r_grade_max = col3.select_slider(label=r_grade_fil_widg_dict["label"],
-                                                        options=r_grade_fil_widg_dict["options"],
-                                                        value=r_grade_fil_widg_dict["value"])
-            r_grade_fil = selected_rgrade_array[selected_rgrade_array.index(r_grade_min) : selected_rgrade_array.index(r_grade_max)+1]
-        if any(df_uniq_fil['Rating'].unique().isin(selected_bgrade_array)):
-            b_grade_min, b_grade_max = col3.select_slider(label=b_grade_fil_widg_dict['label'],
-                                                        options=b_grade_fil_widg_dict['options'],
-                                                        value=b_grade_fil_widg_dict['value'])
-            b_grade_fil = selected_bgrade_array[selected_bgrade_array.index(b_grade_min) : selected_bgrade_array.index(b_grade_max)+1]
+
+    if len(df_uniq_fil[df_uniq_fil['Rating'].isin(selected_rgrade_array)].index) >= 2: # This checks that there is at least 2 entries of this climb type, otherwise the double slider will error
+        r_grade_min, r_grade_max = r_grade_cont.select_slider(label="Route Grade Filter",
+                                                              options=grade_filter_align(df_uniq_fil, selected_rgrade_array)[0],
+                                                              value=grade_filter_align(df_uniq_fil, selected_rgrade_array)[1])
+        r_grade_fil = selected_rgrade_array[selected_rgrade_array.index(r_grade_min) : selected_rgrade_array.index(r_grade_max)+1]
+    if len(df_uniq_fil[df_uniq_fil['Rating'].isin(selected_bgrade_array)].index) >= 2:
+        b_grade_min, b_grade_max = b_grade_cont.select_slider(label="Boulder Grade Filter",
+                                                              options=grade_filter_align(df_uniq_fil, selected_bgrade_array)[0],
+                                                              value=grade_filter_align(df_uniq_fil, selected_bgrade_array)[1])
+        b_grade_fil = selected_bgrade_array[selected_bgrade_array.index(b_grade_min) : selected_bgrade_array.index(b_grade_max)+1]
     all_grade_fil = r_grade_fil + b_grade_fil
 
     # Single pitch or multi pitch filter
-    col1, col2, col3, col4 = st.columns([1.75,0.25,0.5,2.25])
-    pitch_fil_widg_dict = {'label': "Pitch Type", 
-                           'options': ['Single Pitch', 'Multi Pitch'],
-                           'default': ['Single Pitch', 'Multi Pitch']}
-    if move_fil == True:
-        pitch_fil_sel = st.sidebar.multiselect(label=pitch_fil_widg_dict['label'],
-                                               options=pitch_fil_widg_dict['options'],
-                                               default=pitch_fil_widg_dict['default'])
-    if move_fil == False:
-        pitch_fil_sel = col1.multiselect(label=pitch_fil_widg_dict['label'],
-                                               options=pitch_fil_widg_dict['options'],
-                                               default=pitch_fil_widg_dict['default'])
+    pitch_fil_sel = pitch_cont.multiselect(label="Pitch Type",
+                                            options=['Single Pitch', 'Multi Pitch'],
+                                            default=['Single Pitch', 'Multi Pitch'])
     pitch_fil_transf = {'Single Pitch': 'SP', 'Multi Pitch':'MP'}
     pitch_fil_sel = [pitch_fil_transf[x] for x in pitch_fil_sel]
+    
     # Date filter
     if anlist_type == "Ticks":
         date_min = user_ticks_df['Date'].min()
         date_max = user_ticks_df['Date'].max()
-        date_fil_type_widg_dict = {'label': "Date Filter Type",
-                                   'options': ['Date Range', 'Quick Filter'],
-                                   'index': 0}
-        date_fil_widg_dict = {'label': "Date Filter",
-                             'value': (date_min, date_max), 
-                            'min_value': date_min,
-                            'max_value': date_max}
-        if move_fil == True:
-            date_fil_type = st.sidebar.radio(label=date_fil_type_widg_dict['label'],
-                                             options=date_fil_type_widg_dict['options'],
-                                             index=date_fil_type_widg_dict['index'])
-        if move_fil == False:
-            date_fil_type = col3.radio(label=date_fil_type_widg_dict['label'],
-                                       options=date_fil_type_widg_dict['options'],
-                                       index=date_fil_type_widg_dict['index'])
+        date_fil_type = date_type_cont.radio(label="Date Filter Type",
+                                            options=['Date Range', 'Quick Filter'],
+                                            index=0)
         if date_fil_type == 'Date Range':
-            if move_fil == True:
-                date_fil = st.sidebar.date_input(label=date_fil_widg_dict['label'],
-                                                value=date_fil_widg_dict['value'], 
-                                                min_value=date_fil_widg_dict['min_value'],
-                                                max_value=date_fil_widg_dict['max_value'])
-            if move_fil == False:
-                date_fil = col4.date_input(label=date_fil_widg_dict['label'],
-                                                value=date_fil_widg_dict['value'], 
-                                                min_value=date_fil_widg_dict['min_value'],
-                                                max_value=date_fil_widg_dict['max_value'])
+            date_fil = date_cont.date_input(label="Date Filter",
+                                            value=(date_min, date_max), 
+                                            min_value=date_min,
+                                            max_value=date_max)
             date_fil = pd.to_datetime(date_fil)
         if date_fil_type == 'Quick Filter':
             year_list = user_ticks_df['Date'].dt.year.unique().tolist()
             datefil_year_options = [f'Calendar Year: {str(year)}' for year in year_list]
             qdate_fil_widg_dict = {'label': "Quick Date Filter",
                                    'options': datefil_year_options+['Last 1 Month', 'Last 3 Months', 'Last 6 Months', 'Last 12 Months']}
-            if move_fil == True:
-                qdate_fil = st.sidebar.selectbox(label=qdate_fil_widg_dict['label'],
-                                                 options=qdate_fil_widg_dict['options'])
-            if move_fil == False:
-                qdate_fil = col4.selectbox(label=qdate_fil_widg_dict['label'],
-                                           options=qdate_fil_widg_dict['options'])
+            qdate_fil = date_cont.selectbox(label=qdate_fil_widg_dict['label'],
+                                                options=qdate_fil_widg_dict['options'])
             def date_del_month(num_months):
                 deldate = date.today() + relativedelta(months=num_months)
                 date_fil = pd.to_datetime((deldate, date.today()))
@@ -251,106 +212,47 @@ if not unique_routes_df.empty:
                     date_fil = pd.to_datetime((date(year, 1, 1), date(year, 12, 31)))
     
     # Location filter
-    col1, col2 = st.columns([0.3, 4])
     loc_max_tier = df_uniq_fil['Location'].apply(lambda x: len(x.split('>'))).max()           
-    loc_tier_widg_dict = {'label': "Location Tier",
-                          'min_value': 1,
-                          'max_value': loc_max_tier,
-                          'value': 1,
-                          'help': 'Location Tier describes how "deep" the location filter goes. Tier1 is typically a state, Tier2 is typically a geographic area or major destination, Tier3 is typically a sub-area, Tier4 and further typically denote crags and subcrags. It is important to note that between major areas these tiers do not often line up.'}
-    if move_fil == True:
-        loc_tier = st.sidebar.number_input(label=loc_tier_widg_dict['label'],
-                                           min_value=loc_tier_widg_dict['min_value'],
-                                           max_value=loc_tier_widg_dict['max_value'],
-                                           value=loc_tier_widg_dict['value'],
-                                           help=loc_tier_widg_dict['help'])
-    if move_fil == False:
-        loc_tier = col1.number_input(label=loc_tier_widg_dict['label'],
-                                     min_value=loc_tier_widg_dict['min_value'],
-                                     max_value=loc_tier_widg_dict['max_value'],
-                                     value=loc_tier_widg_dict['value'],
-                                     help=loc_tier_widg_dict['help'])
+    loc_tier = loc_tier_cont.number_input(label="Location Tier",
+                                        min_value=1,
+                                        max_value=loc_max_tier,
+                                        value=1,
+                                        help='Location Tier describes how "deep" the location filter goes. Tier1 is typically a state, Tier2 is typically a geographic area or major destination, Tier3 is typically a sub-area, Tier4 and further typically denote crags and subcrags. It is important to note that between major areas these tiers do not often line up.')
     location_list = df_uniq_fil['Location'].apply(lambda x: '>'.join(x.split('>')[0:(loc_tier)])).unique()
     location_list.sort()
-    location_list_widg_dict = {'label': "Location",
-                               'options': location_list}
-    if move_fil == True:
-        loc_sel = st.sidebar.multiselect(label=location_list_widg_dict['label'],
-                                         options=location_list_widg_dict['options'])
-    if move_fil == False:
-        loc_sel = col2.multiselect(label=location_list_widg_dict['label'],
-                                   options=location_list_widg_dict['options'])
+    loc_sel = loc_cont.multiselect(label="Location",
+                                   options=location_list)
     
-    col1, col2, col3 = st.columns([1.75,0.25,2.75])
     if anlist_type == "Ticks":
         # Style filter
         style_options = user_ticks_df['Style'].unique().tolist()
-        style_fil_widg_dict = {'label': 'Style',
-                            'options': style_options,
-                            'default': style_options,
-                            'help': 'Note that "Flash", "Attempt", and "Send" refer to bouldering styles here'}
-        if move_fil == True:
-            style_fil = st.sidebar.multiselect(label=style_fil_widg_dict['label'],
-                                               options=style_fil_widg_dict['options'],
-                                               default=style_fil_widg_dict['default'],
-                                               help=style_fil_widg_dict['help'])
-        if move_fil == False:
-            style_fil = col1.multiselect(label=style_fil_widg_dict['label'],
-                                         options=style_fil_widg_dict['options'],
-                                         default=style_fil_widg_dict['default'],
-                                         help=style_fil_widg_dict['help'])
+        style_fil = style_cont.multiselect(label='Style',
+                                            options=style_options,
+                                            default=style_options,
+                                            help='Note that "Flash", "Attempt", and "Send" refer to bouldering styles here')
         # Lead style filter
         lead_style_list = user_ticks_df['Lead Style'].unique().tolist()
-        lead_style_fil_widg_dict = {'label': 'Lead Style',
-                            'options': lead_style_list,
-                            'default': lead_style_list,
-                            'help': '"nan" is default for non-lead styles such as TR, follow, and all boulders'}
-        if move_fil == True:
-            lead_style_fil = st.sidebar.multiselect(label=lead_style_fil_widg_dict['label'],
-                                                    options=lead_style_fil_widg_dict['options'],
-                                                    default=lead_style_fil_widg_dict['default'],
-                                                    help=lead_style_fil_widg_dict['help'])
-        if move_fil == False:
-            lead_style_fil = col1.multiselect(label=lead_style_fil_widg_dict['label'],
-                                              options=lead_style_fil_widg_dict['options'],
-                                              default=lead_style_fil_widg_dict['default'],
-                                              help=lead_style_fil_widg_dict['help'])
+        lead_style_fil = lead_style_cont.multiselect(label='Lead Style',
+                                                options=lead_style_list,
+                                                default=lead_style_list,
+                                                help='"nan" is default for non-lead styles such as TR, follow, and all boulders')
     
     # Star filter
     min_stars, max_stars = float(df_uniq_fil['Avg Stars'].min()), float(df_uniq_fil['Avg Stars'].max())
-    star_fil_widg_dict = {'label': 'Avg Stars',
-                          'min_value': min_stars,
-                          'max_value': max_stars,
-                          'value': (min_stars, max_stars)}
-    if move_fil == True:
-        star_fil_min, star_fil_max = st.sidebar.slider(label=star_fil_widg_dict['label'],
-                                                       min_value=star_fil_widg_dict['min_value'],
-                                                       max_value=star_fil_widg_dict['max_value'],
-                                                       value=star_fil_widg_dict['value'])
-    if move_fil == False:
-        star_fil_min, star_fil_max = col3.slider(label=star_fil_widg_dict['label'],
-                                                 min_value=star_fil_widg_dict['min_value'],
-                                                 max_value=star_fil_widg_dict['max_value'],
-                                                 value=star_fil_widg_dict['value'])
+    star_fil_min, star_fil_max = star_cont.slider(label='Avg Stars',
+                                                    min_value=min_stars,
+                                                    max_value=max_stars,
+                                                    value=(min_stars, max_stars))
     
     # Length filter
     min_length, max_length = float(df_uniq_fil['Length'].min()), float(df_uniq_fil['Length'].max())
-    length_fil_widg_dict = {'label': 'Length',
-                          'min_value': min_length,
-                          'max_value': max_length,
-                          'value': (min_length, max_length)}
-    if move_fil == True:
-        length_fil_min, length_fil_max = st.sidebar.slider(label=length_fil_widg_dict['label'],
-                                                    min_value=length_fil_widg_dict['min_value'],
-                                                    max_value=length_fil_widg_dict['max_value'],
-                                                    value=length_fil_widg_dict['value'])
-    if move_fil == False:
-        length_fil_min, length_fil_max = col3.slider(label=length_fil_widg_dict['label'],
-                                                 min_value=length_fil_widg_dict['min_value'],
-                                                 max_value=length_fil_widg_dict['max_value'],
-                                                 value=length_fil_widg_dict['value'])
+    length_fil_min, length_fil_max = length_cont.slider(label='Length',
+                                                min_value=min_length,
+                                                max_value=max_length,
+                                                value=(min_length, max_length))
         
     # Apply unique route filters
+    # TODO this filter could be a function
     df_uniq_fil = df_uniq_fil[(df_uniq_fil['SP/MP'].isin(pitch_fil_sel)) | (df_uniq_fil['SP/MP'].isna())]
     if not loc_sel == '':
         df_uniq_fil = df_uniq_fil[df_uniq_fil['Location'].str.contains('|'.join(loc_sel))]
@@ -360,7 +262,7 @@ if not unique_routes_df.empty:
     df_uniq_fil = df_uniq_fil[(df_uniq_fil['Length'] >= length_fil_min) & (df_uniq_fil['Length'] <= length_fil_max)]
     df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
     # Apply tick filters
-    if anlist_type == 'Ticks' and len(date_fil) == 2:
+    if anlist_type == 'Ticks' and len(date_fil) == 2: # The second condition ensures this doesn't try to date filter with an incomplete date filter range
         if df_uniq_fil.empty:
             st.error("No Results From Filter")
         else:
@@ -392,6 +294,7 @@ if not unique_routes_df.empty:
         spmp_colordict = {'SP':'#F2C894', 'MP':'#BAC9B4'}
         baseloc_colordict = dict(zip(df_uniq_fil['Base Location'].value_counts().index, desert_pallete + px.colors.qualitative.Pastel2))
         # Pie Plots
+        # TODO this should be a function
         pie_header_cont = st.container()
         col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
         pie_chart_margin = dict(t=35, b=35, l=35, r=35)
@@ -476,6 +379,11 @@ if not unique_routes_df.empty:
             pvg_graph_cont = st.container()
             pvgcol1, pvgcol2 = pvg_graph_cont.columns([1,1])
             grade_date_part_sel = pvg_part_cont.checkbox("Group Partition", help="Group columns by qualitative metric such as route type", key='PVG Group Partion')
+            # The pitches v grades plot is one of the more difficult plots. It has to consider the following conditions:
+            # 1. For each of the below conditions, a route and a boulder plot must be made
+            # 2. Tick datasets must count total pitches, todo datasets must just count number of climbs
+            # 3. There is an option to partition, and the plotting is then different
+            # 4. If there is a partition, there is an option to partition by percentage instead of raw value
             if anlist_type == 'Ticks':
                 # Tick Pitches V Grades histograms
                 grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Style':'Style', 'Lead Style':'Lead Style', 'Base Location':'Base Location'}
@@ -533,14 +441,14 @@ if not unique_routes_df.empty:
                     fig_hist_bgrade.update_traces(marker_color = '#BAC9B4')
                     pvgcol2.plotly_chart(fig_hist_bgrade)
             if anlist_type == 'ToDos':
-                # Todo Pitches V Grade histograms
+                # Pitches V Grade histograms
                 grade_date_part_dict = {'Route Type':'Route Type', 'Single or Multi Pitch':'SP/MP', 'Base Location':'Base Location'}
                 grade_date_col_dict = {'Route Type':routetype_colordict, 'Single or Multi Pitch':spmp_colordict, 'Base Location':baseloc_colordict}
                 if grade_date_part_sel == True:
                     grade_date_part_sel = pvg_part_cont.selectbox("Partition By", options=grade_date_col_dict.keys(), key="PVG Partition By")
                     grade_date_perc_sel = pvg_part_cont.checkbox("Configure to Percentage", key="PVG Configure to Percentage")
-                    rpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches'].sum().unstack()
-                    bpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Pitches'].sum().unstack()
+                    rpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] != 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Route'].count().unstack()
+                    bpitchagg = df_uniq_fil[df_uniq_fil['Route Type'] == 'Boulder'].groupby(by=['Rating', grade_date_part_dict[grade_date_part_sel]], observed=True)['Route'].count().unstack()
                     if grade_date_perc_sel == True:
                         rpitchagg = rpitchagg.div(rpitchagg.sum(axis=1), axis=0)
                         bpitchagg = bpitchagg.div(bpitchagg.sum(axis=1), axis=0)
@@ -590,6 +498,7 @@ if not unique_routes_df.empty:
                     pvgcol2.plotly_chart(fig_hist_bgrade)
             
             # Both Tick and ToDo histograms
+            # TODO this could be a function
             col1, col2 = st.columns([1,1])
             fig_hist_mppitches = px.histogram(df_uniq_fil[df_uniq_fil['SP/MP']=='MP'],
                                             x='Pitches',
@@ -720,14 +629,14 @@ if not unique_routes_df.empty:
                 if pvd_part_sel == True:
                     pvd_part_sel = st.selectbox("Pitches Vs. Date Partition By", options=pvd_part_dict.keys())
                     pitch_date_perc_sel = st.checkbox("Configure to Percentage")
-                    sumpitch = user_ticks_mff.groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]), pvd_part_dict[pvd_part_sel]])['Pitches Ticked'].sum().fillna(0).unstack()
+                    pvd_dat = user_ticks_mff.groupby(by=[pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]), pvd_part_dict[pvd_part_sel]])['Pitches Ticked'].sum().fillna(0).unstack()
                     if pitch_date_perc_sel == True:
-                        sumpitch = sumpitch.div(sumpitch.sum(axis=1), axis=0)
-                    fig_pvd = px.bar(sumpitch, title='Pitches Vs. Date', color_discrete_map=pvd_col_dict[pvd_part_sel])
+                        pvd_dat = pvd_dat.div(pvd_dat.sum(axis=1), axis=0)
+                    fig_pvd = px.bar(pvd_dat, title='Pitches Vs. Date', color_discrete_map=pvd_col_dict[pvd_part_sel])
                     pvd_cont.plotly_chart(fig_pvd, use_container_width=True)
                 else:
-                    sumpitch = user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]))['Pitches Ticked'].sum().fillna(0)
-                    fig_pvd = px.bar(sumpitch, title='Pitches Vs. Date')
+                    pvd_dat = user_ticks_mff.groupby(pd.Grouper(key='Date', freq=date_div_dict[pvd_divtype]))['Pitches Ticked'].sum().fillna(0)
+                    fig_pvd = px.bar(pvd_dat, title='Pitches Vs. Date')
                     fig_pvd.layout.showlegend = False
                     fig_pvd.update_traces(marker_color=desert_pallete[6])
                     pvd_cont.plotly_chart(fig_pvd, use_container_width=True)
@@ -766,35 +675,30 @@ if not unique_routes_df.empty:
                 # Notable Sends
                 st.markdown('---')
                 st.subheader("Notable Sends")
-                df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff)
+                df_bold_leads, df_impressive_OS, df_woops_falls = tick_report(user_ticks_mff) #func
                 if all([df_bold_leads.empty, df_impressive_OS.empty, df_woops_falls.empty]):
                     st.error("No particularly notable sends, get out there!")
                 col1,col2 = st.columns([1,5])
                 notablesend_sel = col1.selectbox("Notable Send Type", options=['Bold Leads', 'Impressive Onsights', 'Whoops Falls'])
                 if notablesend_sel == 'Bold Leads' and not df_bold_leads.empty:
-                    st.markdown("""##### [Led route with low lead ratio]
-                                While others opted for the top rope, you faced the sharp end.""")
-                    df_bold_leads_pres, gb = aggrid_tick_format(df_bold_leads)
-                    AgGrid(data=df_bold_leads_pres, 
-                        theme='balham',
-                        gridOptions=gb.build(),
-                        allow_unsafe_jscode=True)
+                    notablesend_text = """##### [Led route with low lead ratio]
+                                While others opted for the top rope, you faced the sharp end."""
+                    notablesend_dat = df_bold_leads
                 if notablesend_sel == 'Impressive Onsights' and not df_impressive_OS.empty:
-                    st.markdown("""##### [Onsighted or Flashed route with low OS ratio]  
-                                Few others managed to nab the OS/Flash, but you did.""")
-                    df_impressive_OS_pres, gb = aggrid_tick_format(df_impressive_OS)
-                    AgGrid(data=df_impressive_OS_pres, 
-                        theme='balham',
-                        gridOptions=gb.build(),
-                        allow_unsafe_jscode=True)
+                    notablesend_text = """##### [Onsighted or Flashed route with low OS ratio]  
+                                Few others managed to nab the OS/Flash, but you did."""
+                    notablesend_dat = df_impressive_OS
                 if notablesend_sel =='Whoops Falls' and not df_woops_falls.empty:
-                    st.markdown("""##### [Fell/Hung route with high OS ratio]
-                                We all fall, but these were your most agregious slip ups.""")
-                    df_woops_falls_pres, gb = aggrid_tick_format(df_woops_falls)
-                    AgGrid(data=df_woops_falls_pres, 
-                        theme='balham',
-                        gridOptions=gb.build(),
-                        allow_unsafe_jscode=True)
+                    notablesend_text = """##### [Fell/Hung route with high OS ratio]
+                                We all fall, but these were your most agregious slip ups."""
+                    notablesend_dat = df_woops_falls
+                
+                st.markdown(notablesend_text)
+                notablesend_dat_pres, gb = aggrid_tick_format(notablesend_dat)
+                AgGrid(data=notablesend_dat_pres, 
+                    theme='balham',
+                    gridOptions=gb.build(),
+                    allow_unsafe_jscode=True)
                     
             with st.expander("Full Data Table: Ticks"):
                 df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)

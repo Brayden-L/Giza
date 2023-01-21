@@ -1,7 +1,21 @@
+# These functions are intended to be applied solely to tick type datasets.
+
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 import streamlit as st
+
+def tick_uniq_clean(df_source):
+    """
+    Creatres a unique dataframe of routes from a tick list. It has some irrelevant columns left over that should be removed.
+    input df, return df.
+    """
+    df_output = df_source.drop_duplicates(subset="Route ID")
+    col_list = ['Date', 'Notes', 'Your Stars', 'Style', 'Lead Style']
+    for col in col_list:
+        if col in df_output.columns:
+            df_output.drop(columns=col, inplace=True)
+    return df_output
 
 @st.experimental_memo
 def tick_merge(df_ticks, df_uniq):
@@ -24,7 +38,8 @@ def tick_merge(df_ticks, df_uniq):
         df_ticks.drop(columns=['Rating'], inplace=True)
     if 'Length' in df_ticks.columns:
         df_ticks.drop(columns=['Length'], inplace=True)
-    df_out = df_ticks.merge(df_uniq[['Route ID', 'Pitches', 'Lead Ratio', 'Num Ticks', 'Num Tickers', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Rating', 'Length', 'SP/MP']], how='left', on='Route ID')
+    df_uniq_colkeep = ['Route ID', 'Pitches', 'Lead Ratio', 'Num Ticks', 'Num Tickers', 'OS Ratio', 'Mean Attempts To RP', 'Repeat Sender Ratio', 'Rating', 'Length', 'SP/MP']
+    df_out = df_ticks.merge(df_uniq[df_uniq_colkeep], how='left', on='Route ID')
     return df_out
 
 @st.experimental_memo
@@ -41,7 +56,8 @@ def flag_notable_ticks(df_source):
     df
         output dataframe
     """
-    from unique_route_handling import CLEAN_SEND_FIRST, CLEAN_SEND_WORKED, count_attempt2rp
+    from unique_route_functions import count_attempt2rp
+    from constants import CLEAN_SEND_FIRST, CLEAN_SEND_WORKED
     #Initialize columns
     df_source.insert(len(df_source.columns),'Flash/Onsight',None)
     df_source.insert(len(df_source.columns),'Worked Clean',None)
@@ -88,7 +104,7 @@ def flag_notable_ticks(df_source):
 
 @st.experimental_memo
 def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil):
-    """Creates a pyramid and grade vs time plot based on clean sends only for routes and boulders.
+    """Creates a pyramid and grade vs time plot based on clean sends for routes and boulders seperately
 
     Parameters
     ----------
@@ -108,7 +124,7 @@ def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgr
     fig1, fig2, fig3, fig4
         plotly figures
     """
-    from unique_route_handling import CLEAN_SEND_FIRST, CLEAN_SEND, YDS_GRADES_FULL, V_GRADES_FULL
+    from constants import CLEAN_SEND_FIRST, CLEAN_SEND, YDS_GRADES_FULL, V_GRADES_FULL
     import plotly.express as px
 
     # Create dataframe of clean sends for analysis
@@ -124,23 +140,23 @@ def clean_send_plots(df_source, selected_rgrade_array, r_grade_fil, selected_bgr
     # df_clean_sends_b = df_clean_sends_b.loc[df_clean_sends_r.groupby('Route ID')['Date'].idxmin()] # Optionally ignore subequent clean sends
     df_clean_sends_b['Date Formatted'] = df_clean_sends_b['Date'].dt.date
 
-    fig1 = px.bar(df_clean_sends_r, y="Rating", orientation='h', height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig1.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Routes Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig1.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", insidetextanchor='middle', textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    rpy_fig = px.bar(df_clean_sends_r, y="Rating", orientation='h', height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    rpy_fig.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Routes Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    rpy_fig.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", insidetextanchor='middle', textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig2 = px.scatter(df_clean_sends_r, "Date", "Rating", height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig2.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig2.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    rhistory_fig = px.scatter(df_clean_sends_r, "Date", "Rating", height=45*len(r_grade_fil), category_orders={"Rating": selected_rgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    rhistory_fig.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    rhistory_fig.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig3 = px.bar(df_clean_sends_b, y="Rating", orientation='h', height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig3.update_layout(font={'family':'Courier New', 'color':'black', 'size':18}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Problems Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig3.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", insidetextanchor='middle', textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    bpyr_fig = px.bar(df_clean_sends_b, y="Rating", orientation='h', height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    bpyr_fig.update_layout(font={'family':'Courier New', 'color':'black', 'size':18}, title={'text':'<b>Climbing Pyramid</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Number of Problems Sent'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    bpyr_fig.update_traces(marker_color='#ac7c5c', marker_line_width=2, marker_line_color='#8b532d', textposition="inside", insidetextanchor='middle', textfont={"color": 'White', "size": 12, "family": 'Arial Black'},  hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    fig4 = px.scatter(df_clean_sends_b, "Date", "Rating", height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
-    fig4.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
-    fig4.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
+    bhistory_fig = px.scatter(df_clean_sends_b, "Date", "Rating", height=45*len(b_grade_fil), category_orders={"Rating": selected_bgrade_array[::-1]}, text='Attempts', custom_data=['Route', 'Date Formatted', 'Location', 'Length', 'Avg Stars'])
+    bhistory_fig.update_layout(font={'family':'Courier New', 'color':'black', 'size':20}, title={'text':'<b>Send by Date</b>', 'x':0.5, 'font_size':30}, xaxis={'title': 'Date'}, yaxis={'title': '', 'type': 'category'}, paper_bgcolor='#ece5dc', plot_bgcolor='#F5D3A5', bargap=0)
+    bhistory_fig.update_traces(marker_symbol='square', marker_color='#ac7c5c', marker_size=25, marker_line_width=2, marker_line_color='#8b532d', textfont={"color": 'White', "size": 12}, hovertemplate='Name: %{customdata[0]}<br>Date: %{customdata[1]}<br>Location: %{customdata[2]}<br>Length: %{customdata[3]}ft<br>Avg Stars: %{customdata[4]}')
 
-    return fig1, fig2, fig3, fig4
+    return rpy_fig, rhistory_fig, bpyr_fig, bhistory_fig
 
 def tick_report(df_source):
     """Generates dataframes of routes filtered by some metric

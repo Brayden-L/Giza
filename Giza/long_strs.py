@@ -1,3 +1,5 @@
+# Long markdown and image strings for use in front end display
+
 scrape_explainer = """
 ##### Options
 It is first necessary to explain that streamlit works via a "session". Each person that accesses the app receives their own session. When the user exits the session, whatever occorred during that session is permanently deleted. This is not a full website, there is no database to store your data.<br><br>
@@ -32,7 +34,8 @@ Giza adds multiple new metrics gathered from tick data. They are:
 - **Lead Ratio** : 0<Float<1. What portion of ticks were lead attempts. When low this is a signifier of a dangerous lead. When high this is typically a signifier that the climb is inconvenient to top rope, typically a steep climb. As a rough rule, low is <0.4, high is >0.9.
 - **Onsight Ratio** : 0<Float<1. What portion of ticks were onsights or flashes. When low this is a signifier that the route is "tricky" or stout for the grade. When high this is a signifier that the climb is "straightforward" or soft for the grade. For routes low is <0.35 and high is >0.90. For boulders low is <0.15 and high is >0.7.
 - **Mean Attempts to Redpoint** : Positive float >=1. This is the mean of how many attempts it took for a successful redpoint from the population of climbers that were not able to onsight/flash the route, but eventually worked to a redpoint. It primarily signifies difficulty to redpoint. Few climbers are meticulous about logging their attempts, so the value of this metric is diminished. As a rough rule, high is >1.80.
-- **Repeat Sender Ratio** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule a value above 1.2 is notable."""
+- **Repeat Sender Ratio** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule a value above 1.2 is notable.
+"""
 
 about_explainer = """
 Giza is intended to supplement [Mountain Project](https://www.mountainproject.com/) user tick list data to to provide additional data insights that are not available on the base website. The core inspiration was to provide a [climbing pyramid](https://bomberclimbing.com/blog/rock-climbing-pyramid/#:~:text=A%20climbing%20pyramid%20is%20a,some%20more%20attention%20or%20support.), which is a useful tool for gauging progression and outlining appropriate future objectives. The analytic possibilities enabled by the user generated data is vast, so there are many additional capabilities provided.
