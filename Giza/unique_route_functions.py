@@ -257,11 +257,6 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
         if r_direction == 'even_rand':
             grademoderate()
             grade_split(rgradeupmap,rgradedownmap)
-        if r_direction == 'manual':
-            needs_grade_corr = df_source[rating_isolate.isin(list(rgrademoderatemap.keys()) + list(rgradedownmap.keys()))]
-            for loop_count, (index, data) in enumerate(needs_grade_corr.iterrows()):
-                updated_grade = pyip.inputChoice(prompt=f"[{loop_count+1}/{needs_grade_corr.shape[0]}] Input Grade Correction For: {data['Route'].title()}:\n", choices=YDS_GRADES_LETTER)
-                df_source.at[index, 'Rating'] = updated_grade
 
     #Boulder Grades
     if b_type == 'flat':
@@ -277,11 +272,6 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
             df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmapflat)
         if b_direction == 'even_rand':
             grade_split(bgradeupmapflat,bgradedownmapflat)
-        if b_direction == 'manual':
-            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmapflat.keys()))]
-            for loop_count, (index, data) in enumerate(needs_grade_corr.iterrows()):
-                updated_grade = pyip.inputChoice(prompt=f"[{loop_count+1}/{needs_grade_corr.shape[0]}] Input Grade Correction For: {data['Route'].title()}:\n", choices=V_GRADES_FLAT)
-                df_source.at[index, 'Rating'] = updated_grade
 
     if b_type =='sign':
         if b_direction == 'up':
@@ -292,11 +282,6 @@ def grade_homo(df_source, r_type, r_direction, b_type, b_direction):
             df_source.loc[grade_change_subset, 'Rating'] = df_source[grade_change_subset]['Original Rating'].map(bgradedownmapsign)
         if b_direction == 'even_rand':
             grade_split(bgradeupmapsign,bgradedownmapsign)
-        if b_direction == 'manual':
-            needs_grade_corr = df_source[rating_isolate.isin(list(bgradedownmapsign.keys()))]
-            for loop_count, (index, data) in enumerate(needs_grade_corr.iterrows()):
-                updated_grade = pyip.inputChoice(prompt=f"[{loop_count+1}/{needs_grade_corr.shape[0]}] Input Grade Correction For: {data['Route'].title()}:\n", choices=V_GRADES_FLAT)
-                df_source.at[index, 'Rating'] = updated_grade
     
     return df_source
 
