@@ -7,6 +7,7 @@ import streamlit_nested_layout
 from unique_route_functions import *
 from tick_route_functions import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
 from long_strs import analysis_explainer
+from Main_Page import session_state_init
 # Visualization
 import plotly.express as px
 #General
@@ -17,7 +18,7 @@ from dateutil.relativedelta import relativedelta
 import pickle
 
 ### Setup
-st.set_page_config(layout="wide")
+session_state_init()
 unique_routes_df = pd.DataFrame()
 
 ### Header

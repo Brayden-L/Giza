@@ -4,7 +4,7 @@ import streamlit_nested_layout
 from unique_route_functions import *
 from long_strs import pyr_bg_img
 
-st.set_page_config(layout="centered", page_title="Main Page")
+st.set_page_config(layout="wide", page_title="Main Page")
 st.markdown(pyr_bg_img, unsafe_allow_html=True)
 
 def session_state_init():
@@ -35,6 +35,7 @@ def session_state_init():
     
 session_state_init()
 
-st.title("Giza")
-st.header("Extended Rock Climbing Analytics")
-st.subheader("Build Your Tick Pyramid")
+col1,col2,col3 = st.columns([1,2,1])
+col2.title("Giza")
+col2.header("Extended Rock Climbing Analytics")
+col2.subheader("Build Your Tick Pyramid")
