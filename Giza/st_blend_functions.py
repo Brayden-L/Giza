@@ -49,7 +49,7 @@ def scrape_ticktodo(df, type, strip):
     if type == "Ticks": # if ticks, need to get default pitch numbers
         df = extract_default_pitch(df)
     df = assign_spmp(df)
-    df, blocks = extract_tick_details(df)
+    df = extract_tick_details(df)
     df = climb_tick_analysis(df)
     
     # Create scrape success details

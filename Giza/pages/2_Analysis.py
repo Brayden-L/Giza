@@ -700,12 +700,13 @@ if not unique_routes_df.empty:
                                 We all fall, but these were your most agregious slip ups."""
                     notablesend_dat = df_woops_falls
                 
-                st.markdown(notablesend_text)
-                notablesend_dat_pres, gb = aggrid_tick_format(notablesend_dat)
-                AgGrid(data=notablesend_dat_pres, 
-                    theme='balham',
-                    gridOptions=gb.build(),
-                    allow_unsafe_jscode=True)
+                if not df_bold_leads.empty and not df_impressive_OS.empty and not df_woops_falls.empty:
+                    st.markdown(notablesend_text)
+                    notablesend_dat_pres, gb = aggrid_tick_format(notablesend_dat)
+                    AgGrid(data=notablesend_dat_pres, 
+                        theme='balham',
+                        gridOptions=gb.build(),
+                        allow_unsafe_jscode=True)
                     
             with st.expander("Full Data Table: Ticks"):
                 df_ticks_pres, gb = aggrid_tick_format(user_ticks_mff)
