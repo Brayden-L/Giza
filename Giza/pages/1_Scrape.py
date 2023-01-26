@@ -14,7 +14,7 @@ def disable_buttons():
     st.session_state.scrape_button_state = True
     st.session_state.exp_button_state = True
     st.session_state.df_usend_uniq = pd.DataFrame()
-
+st.error("😞 Mountain Project has since updated their website to block stat scraping. This tool can no longer create additional metrics.")
 st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
 with st.expander('✋ Help ✋'):
     st.markdown(scrape_explainer, unsafe_allow_html=True)

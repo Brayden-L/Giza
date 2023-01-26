@@ -6,6 +6,7 @@ import streamlit_nested_layout
 # Other Project Files
 from unique_route_functions import *
 from tick_route_functions import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
+from st_blend_functions import uniq_filter
 from long_strs import analysis_explainer
 from Main_Page import session_state_init
 # Visualization
@@ -33,10 +34,12 @@ col1, col2, col3 = st.columns([1.5,0.25,1.25])
 col1.header('Dataset Selection')
 anlist_type = col1.radio("List Type", options=["Ticks", "ToDos"], horizontal=True)
 data_source_type_selections = ['Use Session Dataset', 'Select Provided Dataset', 'Upload Pickle File']
+# Set data source initial setting appropriately based on whether user scraped
 if st.session_state.df_usend_uniq_ticks.empty:
     data_source_type_startind = 1
 else:
     data_source_type_startind = 0
+# Tick dataset selection
 if anlist_type == 'Ticks':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True, index=data_source_type_startind)
     if data_source_type == 'Use Session Dataset':
@@ -60,6 +63,7 @@ if anlist_type == 'Ticks':
                 unique_routes_df, import_details, user_ticks_df = pickle.load(tick_upload)
             except:
                 st.error("File Error", icon="⚠️")
+# Todos dataset selection
 if anlist_type == 'ToDos':
     data_source_type = col1.radio("Data Source Selection", data_source_type_selections, help="placeholder ", horizontal=True, index=data_source_type_startind)
     if data_source_type == 'Use Session Dataset':
@@ -84,8 +88,8 @@ if anlist_type == 'ToDos':
             except:
                 st.error("File Error", icon="⚠️")
 
-### Grade Homogenization
 if not unique_routes_df.empty:
+    ### Grade Homogenization
     with col3:
         st.subheader("Grade Homegenization Type")
         grade_settings = ['letter', 'even_rand', 'flat', 'even_rand']
@@ -98,21 +102,21 @@ if not unique_routes_df.empty:
         with col2:
             boulder_grade_type = st.radio("Boulders", options=['Flat (V4)', 'Sign (V4-)'])
             boulder_round_type = st.radio("Boulder Round Type", options=['Round Evenly By Random', 'Round Up', 'Round Down'], help='Round Evenly By Random rounds up half of the population and rounds down the other half. Which route belongs to which half is random.')
-        # TODO this block could be a function
+        # This block ensures clean grade type assignment from the GUI selection
         gh_key = {'Sign (5.10-)': 'sign', 'Letter (5.10a)': 'letter', 'Sign (V4-)': 'sign', 'Flat (V4)': 'flat', 'Round Evenly By Random': 'even_rand', 'Round Down': 'down', 'Round Up': 'up' }
         grade_settings = [gh_key[route_grade_type], gh_key[route_round_type], gh_key[boulder_grade_type], gh_key[boulder_round_type]]
         unique_routes_df = grade_homo(unique_routes_df, *grade_settings)
         selected_rgrade_array = {'sign': YDS_GRADES_SIGN, 'letter': YDS_GRADES_LETTER}[gh_key[route_grade_type]]
         selected_bgrade_array = {'sign': V_GRADES_SIGN, 'flat': V_GRADES_FLAT}[gh_key[boulder_grade_type]]
     st.markdown('---')
-    
+
     ### Filtering
     # Filter widget setup
     st.header("Filtering")
     move_fil = st.checkbox("Move Filter to Sidebar", help="Filters in the sidebar remove the need to scroll back and forth if you will be tweaking the filter settings a lot. This is at the expense of cramped visuals.")
     df_uniq_fil = unique_routes_df.copy()
     
-    # This allows the filter to be drawn in wide on the page itself, or on the sidebar.
+    # Allows the filter to be drawn in wide on the page itself, or on the sidebar.
     if move_fil == False:
         fil_cont = st.container()
         r1col1, r1col2, r1col3 = fil_cont.columns([1.75,0.25,2.75])
@@ -137,9 +141,9 @@ if not unique_routes_df.empty:
     
     # Tick and Routetype Fil
     routetype_options = df_uniq_fil['Route Type'].unique().tolist()
-    numtick_fil = numtick_cont.number_input(label="Minimum Tick Count Cutoff",
-                                            value=30,
-                                            help="Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff")
+    # numtick_fil = numtick_cont.number_input(label="Minimum Tick Count Cutoff",
+    #                                         value=30,
+    #                                         help="Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff")
     routetype_fil = routetype_cont.multiselect(label="Climb Type",
                                                options=routetype_options,
                                                default=routetype_options)
@@ -253,15 +257,9 @@ if not unique_routes_df.empty:
                                                 value=(min_length, max_length))
         
     # Apply unique route filters
-    # TODO this filter could be a function
-    df_uniq_fil = df_uniq_fil[(df_uniq_fil['SP/MP'].isin(pitch_fil_sel)) | (df_uniq_fil['SP/MP'].isna())]
-    if not loc_sel == '':
-        df_uniq_fil = df_uniq_fil[df_uniq_fil['Location'].str.contains('|'.join(loc_sel))]
-    df_uniq_fil = df_uniq_fil[df_uniq_fil['Route Type'].isin(routetype_fil)]
-    df_uniq_fil = df_uniq_fil[df_uniq_fil['Rating'].isin(all_grade_fil)]
-    df_uniq_fil = df_uniq_fil[(df_uniq_fil['Avg Stars'] >= star_fil_min) & (df_uniq_fil['Avg Stars'] <= star_fil_max)]
-    df_uniq_fil = df_uniq_fil[(df_uniq_fil['Length'] >= length_fil_min) & (df_uniq_fil['Length'] <= length_fil_max)]
-    df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil]
+    uniq_fil_dict = {'pitch_fil_sel': pitch_fil_sel, 'loc_sel':loc_sel, 'routetype_fil':routetype_fil, 'all_grade_fil':all_grade_fil, 'star_fil_min':star_fil_min, 'star_fil_max':star_fil_max,
+                'length_fil_min':length_fil_min, 'length_fil_max':length_fil_max}
+    df_uniq_fil, _ = uniq_filter(df_uniq_fil, uniq_fil_dict, type='ToDo') # func
     # Apply tick filters
     if anlist_type == 'Ticks' and len(date_fil) == 2: # The second condition ensures this doesn't try to date filter with an incomplete date filter range
         if df_uniq_fil.empty:
@@ -270,19 +268,10 @@ if not unique_routes_df.empty:
             # Initialize tick dataframe
             user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
             user_ticks_mf = user_ticks_merged.copy()
-            user_ticks_mf = flag_notable_ticks(user_ticks_mf)
-            
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['SP/MP'].isin(pitch_fil_sel)) | user_ticks_mf['SP/MP'].isna()]
-            if not loc_sel == '':
-                user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Avg Stars'] >= star_fil_min) & (user_ticks_mf['Avg Stars'] <= star_fil_max)]
-            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Length'] >= length_fil_min) & (user_ticks_mf['Length'] <= length_fil_max)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Style'].isin(style_fil)]
-            user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
-            user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil]
+            user_ticks_mf = flag_notable_ticks(user_ticks_mf) # func
+            # Filter tick dataframe
+            tick_fil_dict = uniq_fil_dict | {'date_fil':date_fil, 'style_fil':style_fil, 'lead_style_fil':lead_style_fil}
+            user_ticks_mf, user_ticks_mff = uniq_filter(user_ticks_mf, tick_fil_dict, type='Tick') # func
     
     st.markdown('---')
     with st.expander("Overview Plots", expanded=True):
@@ -294,13 +283,15 @@ if not unique_routes_df.empty:
         routetype_colordict = {'Boulder':'#BAC9B4', 'Sport':'#FF985A', 'Trad':'#779ECC'}
         spmp_colordict = {'SP':'#F2C894', 'MP':'#BAC9B4'}
         baseloc_colordict = dict(zip(df_uniq_fil['Base Location'].value_counts().index, desert_pallete + px.colors.qualitative.Pastel2))
+        color_dictdict = {'desert_pallete':desert_pallete, 'style_colordict':style_colordict, 'leadstyle_colordict':leadstyle_colordict, 'routetype_colordict':routetype_colordict, 'spmp_colordict':spmp_colordict, 'baseloc_colordict':baseloc_colordict}
         # Pie Plots
-        # TODO this should be a function
+        # TODO this could be a function
         pie_header_cont = st.container()
         col1, col2, col3, col4, col5 = st.columns([1,1,1,1,1])
         pie_chart_margin = dict(t=35, b=35, l=35, r=35)
+        pie_width = pie_height = 300
         if df_uniq_fil.empty:
-            pass
+            st.error("No Results From Filter")
         else:
             if anlist_type == 'Ticks' and len(date_fil) == 2:
                 pie_header_cont.markdown('##### Ticked Pitch Count Pie Charts')
@@ -311,8 +302,8 @@ if not unique_routes_df.empty:
                                         color=df_counts_leadstyle.index,
                                         color_discrete_map=style_colordict,
                                         title='Style',
-                                        width=300,
-                                        height=300)
+                                        width=pie_width,
+                                        height=pie_height)
                 fig_pie_leadstyle.update_layout(margin=pie_chart_margin)
                 fig_pie_leadstyle.update_traces(hole=.4)
                 col4.plotly_chart(fig_pie_leadstyle)
@@ -323,13 +314,13 @@ if not unique_routes_df.empty:
                                         color=df_counts_leadstyle.index,
                                         color_discrete_map=leadstyle_colordict,
                                         title='Lead Style',
-                                        width=300,
-                                        height=300)
+                                        width=pie_width,
+                                        height=pie_height)
                 fig_pie_leadstyle.update_layout(margin=pie_chart_margin)
                 fig_pie_leadstyle.update_traces(hole=.4)
                 col5.plotly_chart(fig_pie_leadstyle)
 
-            if anlist_type == 'ToDos':
+            if anlist_type == 'ToDos': # Switches aggregate type if todo list
                 pie_header_cont.markdown('##### Pitch Count Pie Charts')
                 pie_agg = 'Pitches'
 
@@ -339,8 +330,8 @@ if not unique_routes_df.empty:
                                     color=df_counts_routetype.index,
                                     color_discrete_map=routetype_colordict,
                                     title='Climb Type',
-                                    width=300,
-                                    height=300)
+                                    width=pie_width,
+                                    height=pie_height)
             fig_pie_routetype.update_layout(margin=pie_chart_margin)
             fig_pie_routetype.update_traces(hole=.4)
             col1.plotly_chart(fig_pie_routetype)
@@ -352,8 +343,8 @@ if not unique_routes_df.empty:
                                 color_discrete_map=spmp_colordict,
                                 category_orders={},
                                 title="Single or Multi Pitch",
-                                width=300,
-                                height=300)
+                                width=pie_width,
+                                height=pie_height)
             fig_pie_spmp.update_layout(margin=pie_chart_margin)
             fig_pie_spmp.update_traces(hole=.4)
             col2.plotly_chart(fig_pie_spmp)
@@ -363,8 +354,8 @@ if not unique_routes_df.empty:
                                 names=df_counts_loc1.index,
                                 color_discrete_map=baseloc_colordict, 
                                 title='Base Location',
-                                width=300,
-                                height=300)
+                                width=pie_width,
+                                height=pie_height)
             fig_pie_loc1.update_layout(margin=pie_chart_margin)
             fig_pie_loc1.update_traces(hole=.4)
             col3.plotly_chart(fig_pie_loc1)
@@ -657,7 +648,7 @@ if not unique_routes_df.empty:
                 if gvd_norm_sel == True:
                     gvd_data = gvd_data.div(gvd_data.max(axis=1), axis=0)
                 fig_gvd = px.imshow(gvd_data, title='Route Grade Vs. Date', color_continuous_scale='RdBu_r')
-                fig_gvd.update_yaxes(type='category')
+                fig_gvd.update_yaxes(type='category', showgrid=False)
                 gvd_cont.plotly_chart(fig_gvd, use_container_width=True)
                                 
                 col1, col2 = st.columns([1,1])

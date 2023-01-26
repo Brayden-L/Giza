@@ -35,7 +35,7 @@ def session_state_init():
     
 session_state_init()
 
-col1,col2,col3 = st.columns([1,2,1])
+col1,col2,col3 = st.columns([1,2,1]) # This formatting is required since set_page_config can only be set once per app and we want this text centered
 col2.title("Giza")
 col2.header("Extended Rock Climbing Analytics")
 col2.subheader("Build Your Tick Pyramid")
