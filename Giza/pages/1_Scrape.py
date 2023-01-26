@@ -14,8 +14,7 @@ def disable_buttons():
     st.session_state.scrape_button_state = True
     st.session_state.exp_button_state = True
     st.session_state.df_usend_uniq = pd.DataFrame()
-st.error("😞 Mountain Project has since updated their website to block stat scraping. This tool can no longer create additional metrics.")
-st.warning("Scraping is time intensive, if you're mostly interested in exploring the functionality, try a provided dataset.", icon="⚠️")
+st.warning("Scraping is disabled for general use to be considerate to Mountain Project.", icon="⚠️")
 with st.expander('✋ Help ✋'):
     st.markdown(scrape_explainer, unsafe_allow_html=True)
 
@@ -37,7 +36,7 @@ with col1:
                                 placeholder='https://www.mountainproject.com/user/...',
                                 label_visibility='collapsed',
                                 on_change=disable_buttons)
-    if st.button(f"Download {st.session_state.list_type} Data"):
+    if st.button(f"Download {st.session_state.list_type} Data", disabled=True):
         st.session_state.scrape_button_state = True
         st.session_state.exp_button_state = True
         with st.spinner("Downloading"):

@@ -27,6 +27,7 @@ streamlit-nested-layout = {version = "^0.1.1", python = ">=3.9,<3.9.7 || >3.9.7,
 stqdm = "^0.0.4"
 streamlit-lottie = "^0.0.3"
 scipy = "^1.10.0"
+selenium-wire = "^5.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
