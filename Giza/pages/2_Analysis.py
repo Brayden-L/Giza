@@ -6,7 +6,6 @@ import streamlit_nested_layout
 # Other Project Files
 from unique_route_functions import *
 from tick_route_functions import tick_merge, flag_notable_ticks, clean_send_plots, tick_report
-from st_blend_functions import uniq_filter
 from long_strs import analysis_explainer
 from Main_Page import session_state_init
 # Visualization
@@ -141,9 +140,9 @@ if not unique_routes_df.empty:
     
     # Tick and Routetype Fil
     routetype_options = df_uniq_fil['Route Type'].unique().tolist()
-    # numtick_fil = numtick_cont.number_input(label="Minimum Tick Count Cutoff",
-    #                                         value=30,
-    #                                         help="Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff")
+    numtick_fil = numtick_cont.number_input(label="Minimum Tick Count Cutoff",
+                                            value=30,
+                                            help="Low tick counts make for poor quality metrics, this filter eliminates entries with tick counts below the cutoff")
     routetype_fil = routetype_cont.multiselect(label="Climb Type",
                                                options=routetype_options,
                                                default=routetype_options)
@@ -257,9 +256,15 @@ if not unique_routes_df.empty:
                                                 value=(min_length, max_length))
         
     # Apply unique route filters
-    uniq_fil_dict = {'pitch_fil_sel': pitch_fil_sel, 'loc_sel':loc_sel, 'routetype_fil':routetype_fil, 'all_grade_fil':all_grade_fil, 'star_fil_min':star_fil_min, 'star_fil_max':star_fil_max,
-                'length_fil_min':length_fil_min, 'length_fil_max':length_fil_max}
-    df_uniq_fil, _ = uniq_filter(df_uniq_fil, uniq_fil_dict, type='ToDo') # func
+    # TODO this filter could be a function
+    df_uniq_fil = df_uniq_fil[(df_uniq_fil['SP/MP'].isin(pitch_fil_sel)) | (df_uniq_fil['SP/MP'].isna())]
+    if not loc_sel == '':
+        df_uniq_fil = df_uniq_fil[df_uniq_fil['Location'].str.contains('|'.join(loc_sel))]
+    df_uniq_fil = df_uniq_fil[df_uniq_fil['Route Type'].isin(routetype_fil)]
+    df_uniq_fil = df_uniq_fil[df_uniq_fil['Rating'].isin(all_grade_fil)]
+    df_uniq_fil = df_uniq_fil[(df_uniq_fil['Avg Stars'] >= star_fil_min) & (df_uniq_fil['Avg Stars'] <= star_fil_max)]
+    df_uniq_fil = df_uniq_fil[(df_uniq_fil['Length'] >= length_fil_min) & (df_uniq_fil['Length'] <= length_fil_max)]
+    # df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil] # numtick filtering disabled
     # Apply tick filters
     if anlist_type == 'Ticks' and len(date_fil) == 2: # The second condition ensures this doesn't try to date filter with an incomplete date filter range
         if df_uniq_fil.empty:
@@ -268,10 +273,20 @@ if not unique_routes_df.empty:
             # Initialize tick dataframe
             user_ticks_merged = tick_merge(user_ticks_df, unique_routes_df)
             user_ticks_mf = user_ticks_merged.copy()
-            user_ticks_mf = flag_notable_ticks(user_ticks_mf) # func
-            # Filter tick dataframe
-            tick_fil_dict = uniq_fil_dict | {'date_fil':date_fil, 'style_fil':style_fil, 'lead_style_fil':lead_style_fil}
-            user_ticks_mf, user_ticks_mff = uniq_filter(user_ticks_mf, tick_fil_dict, type='Tick') # func
+            user_ticks_mf = flag_notable_ticks(user_ticks_mf)
+            
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['SP/MP'].isin(pitch_fil_sel)) | user_ticks_mf['SP/MP'].isna()]
+            if not loc_sel == '':
+                user_ticks_mf = user_ticks_mf[user_ticks_mf['Location'].str.contains('|'.join(loc_sel))]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Route Type'].isin(routetype_fil)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Rating'].isin(all_grade_fil)]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Date'] >= date_fil[0]) & (user_ticks_mf['Date'] <= date_fil[1])]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Avg Stars'] >= star_fil_min) & (user_ticks_mf['Avg Stars'] <= star_fil_max)]
+            user_ticks_mf = user_ticks_mf[(user_ticks_mf['Length'] >= length_fil_min) & (user_ticks_mf['Length'] <= length_fil_max)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Style'].isin(style_fil)]
+            user_ticks_mf = user_ticks_mf[user_ticks_mf['Lead Style'].isin(lead_style_fil)]
+            # user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil] # numtick filtering disabled
+            user_ticks_mff = user_ticks_mf 
     
     st.markdown('---')
     with st.expander("Overview Plots", expanded=True):
