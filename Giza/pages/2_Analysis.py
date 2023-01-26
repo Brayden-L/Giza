@@ -50,7 +50,8 @@ if anlist_type == 'Ticks':
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/Ticks/'
         files = os.listdir(preldata_path)
-        preldata_sel = col1.selectbox("Profiles", files.sort())
+        files.sort()
+        preldata_sel = col1.selectbox("Profiles", files)
         try:
             unique_routes_df, import_details, user_ticks_df = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
@@ -74,7 +75,7 @@ if anlist_type == 'ToDos':
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/ToDos/'
         files = os.listdir(preldata_path)
-        preldata_sel = col1.selectbox("Profiles", files.sort())
+        preldata_sel = col1.selectbox("Profiles", files)
         try:
             unique_routes_df, import_details, _ = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
@@ -619,10 +620,10 @@ if not unique_routes_df.empty:
                     rpyrplot, rtimeplot, bpyrplot, btimeplot = clean_send_plots(user_ticks_mff, selected_rgrade_array, r_grade_fil, selected_bgrade_array, b_grade_fil)
                 if pyr_plot_type_sel =='Routes':
                     st.plotly_chart(rpyrplot, theme=None, use_container_width=True)
-                    st.plotly_chart(rtimeplot, theme=None, use_container_width=True)
+                    # st.plotly_chart(rtimeplot, theme=None, use_container_width=True)
                 if pyr_plot_type_sel =='Boulders':
                     st.plotly_chart(bpyrplot, theme=None, use_container_width=True)
-                    st.plotly_chart(btimeplot, theme=None, use_container_width=True)
+                    # st.plotly_chart(btimeplot, theme=None, use_container_width=True)
                     
             with st.expander("Tick Report", expanded=True):
                 # Pitches V Date
