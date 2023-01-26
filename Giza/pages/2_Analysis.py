@@ -50,7 +50,7 @@ if anlist_type == 'Ticks':
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/Ticks/'
         files = os.listdir(preldata_path)
-        preldata_sel = col1.selectbox("Profiles", files)
+        preldata_sel = col1.selectbox("Profiles", files.sort())
         try:
             unique_routes_df, import_details, user_ticks_df = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
@@ -74,7 +74,7 @@ if anlist_type == 'ToDos':
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / 'Data_Archive/ToDos/'
         files = os.listdir(preldata_path)
-        preldata_sel = col1.selectbox("Profiles", files)
+        preldata_sel = col1.selectbox("Profiles", files.sort())
         try:
             unique_routes_df, import_details, _ = pickle.load(open(preldata_path / preldata_sel, 'rb'))
         except:
