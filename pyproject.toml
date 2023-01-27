@@ -33,6 +33,7 @@ selenium-wire = "^5.1.0"
 ipykernel = "^6.17.0"
 flake8 = "^6.0.0"
 autopep8 = "^2.0.0"
+black = {version = "^23.1a1", allow-prereleases = true}
 
 [build-system]
 requires = ["poetry-core"]
