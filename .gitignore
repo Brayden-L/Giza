@@ -4,3 +4,5 @@
 .vscode/
 # Ignore pycache
 __pycache__/
+# Ignore geckodriver
+geckodriver.log

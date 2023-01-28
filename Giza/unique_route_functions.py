@@ -408,7 +408,7 @@ def routescrape_syncro(df_source, retries=3):
 
     # selenium setup
     firefoxOptions = Options()
-    # firefoxOptions.add_argument("--headless")
+    firefoxOptions.add_argument("--headless")
     service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(
         options=firefoxOptions,
@@ -440,7 +440,6 @@ def routescrape_syncro(df_source, retries=3):
             except:
                 break
         res = driver.page_source
-        print(res)
         return res
 
     stqdm.pandas(desc="(1/5) Scraping Mainpages")
