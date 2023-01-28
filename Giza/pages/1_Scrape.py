@@ -19,7 +19,7 @@ def disable_buttons():
 
 
 st.warning(
-    "Scraping stat pages is disallowed, no additional metrics will be created.",
+    "Scraping is time intensive! To check out an analysis without waiting, try a provided dataset.",
     icon="⚠️",
 )
 with st.expander("✋ Help ✋"):

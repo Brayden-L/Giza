@@ -14,6 +14,11 @@ from bs4 import BeautifulSoup
 import lxml
 import cchardet
 import re
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
+from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.common.by import By
 
 # General
 import datetime as dt
@@ -391,26 +396,51 @@ def routescrape_syncro(df_source, retries=3):
     """
     Downloads the route page and stat page for each entry.
     It is suggested you pass this a list of unique routes so it does not download redundantly.
-    Input df, return df with two new columns of request.Reponse objects.
+    Input df
+    Returns a text string for both .
     """
+    # request setup
     s = requests.Session()
     retries = Retry(
         total=retries, backoff_factor=1, status_forcelist=tuple(range(400, 600))
     )
     s.mount("http://", HTTPAdapter(max_retries=retries))
 
+    # selenium setup
+    firefoxOptions = Options()
+    # firefoxOptions.add_argument("--headless")
+    service = Service(GeckoDriverManager().install())
+    driver = webdriver.Firefox(
+        options=firefoxOptions,
+        service=service,
+    )
+    driver.implicitly_wait(2)
+    butt_xpath = """//*[@id="route-stats"]/div[3]/div/div[4]/div/div/button"""
+
     def insert_str_to_address(url, insert_phrase):
         str_list = url.split("/")
         str_list.insert(4, insert_phrase)
         return "/".join(str_list)
 
-    def page_download(url):
+    def page_download_req(url):
         try:
-            res = s.get(url)
+            res = s.get(url).text
         except Exception as e:
             print(url)
             print(e)
             res = None
+        return res
+
+    def page_download_sel(url):
+        driver.get(url)
+        while True:
+            try:
+                butt = driver.find_element(By.XPATH, butt_xpath)
+                butt.click()
+            except:
+                break
+        res = driver.page_source
+        print(res)
         return res
 
     stqdm.pandas(desc="(1/5) Scraping Mainpages")
@@ -418,24 +448,24 @@ def routescrape_syncro(df_source, retries=3):
         "Re Mainpage" not in df_source.columns
     ):  # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
         df_source.insert(len(df_source.columns), "Re Mainpage", None)
-        df_source["Re Mainpage"] = df_source["URL"].progress_apply(page_download)
+        df_source["Re Mainpage"] = df_source["URL"].progress_apply(page_download_req)
     else:
         subset = df_source["Re Mainpage"].isna()
         df_source.loc[subset, "Re Mainpage"] = df_source.loc[
             subset, "URL"
-        ].progress_apply(page_download)
+        ].progress_apply(page_download_req)
     stqdm.pandas(desc="(2/5) Scraping Statpages")
     if "Re Statpage" not in df_source.columns:
         df_source.insert(len(df_source.columns), "Re Statpage", None)
         df_source["Re Statpage"] = df_source["URL"].progress_apply(
-            lambda x: page_download(insert_str_to_address(x, "stats"))
+            lambda x: page_download_sel(insert_str_to_address(x, "stats"))
         )
     else:
         subset = df_source["Re Statpage"].isna()
         df_source.loc[subset, "Re Statpage"] = df_source.loc[
             subset, "URL"
-        ].progress_apply(page_download)
-
+        ].progress_apply(page_download_sel)
+    driver.quit()
     return df_source
 
 
@@ -451,7 +481,7 @@ def extract_default_pitch(df_source):
         if res is None:
             return None
         else:
-            soup = BeautifulSoup(res.text, "lxml")
+            soup = BeautifulSoup(res, "lxml")
             route_type_text = str(
                 soup.find(class_="description-details").find_all("td")[1]
             )
@@ -492,7 +522,10 @@ def assign_spmp(df_source):
         (df_source["Route Type"].isin(["Sport", "Trad"])) & (df_source["Pitches"] > 1),
         "SP/MP",
     ] = "MP"
-    df_source["SP/MP"] = pd.Categorical(df_source["SP/MP"])
+    if (
+        df_source["SP/MP"].dtype != "category"
+    ):  # If it isn't already categorical from a previous application of this function, then set it to categorical
+        df_source["SP/MP"] = pd.Categorical(df_source["SP/MP"])
     return df_source
 
 
@@ -539,12 +572,12 @@ def extract_tick_details(df_source):
         if res is None:
             d = None
         else:
-            soup = BeautifulSoup(res.text, "lxml")
+            soup = BeautifulSoup(res, "lxml")
             # print(soup.select("#route-stats > div.row.pt-main-content > div > h1")) # Tells you which page is being scraped, useful for debugging
             try:
                 blocks = list(
                     soup.select(
-                        "#route-stats > div:nth-child(2) > div:nth-last-child(1)"
+                        "#route-stats > div.onx-stats-table > div > div.col-lg-6.col-sm-12.col-xs-12.mt-2.max-height.max-height-md-1000.max-height-xs-400 > div > table > tbody"
                     )[0].find_all("tr")
                 )
             except Exception:
