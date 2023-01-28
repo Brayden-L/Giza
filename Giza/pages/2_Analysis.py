@@ -420,7 +420,9 @@ if not unique_routes_df.empty:
         (df_uniq_fil["Length"] >= length_fil_min)
         & (df_uniq_fil["Length"] <= length_fil_max)
     ]
-    # df_uniq_fil = df_uniq_fil[df_uniq_fil['Num Ticks'] >= numtick_fil] # numtick filtering disabled
+    df_uniq_fil = df_uniq_fil[
+        df_uniq_fil["Num Ticks"] >= numtick_fil
+    ]  # numtick filtering disabled
     # Apply tick filters
     if (
         anlist_type == "Ticks" and len(date_fil) == 2
@@ -461,7 +463,9 @@ if not unique_routes_df.empty:
             user_ticks_mf = user_ticks_mf[
                 user_ticks_mf["Lead Style"].isin(lead_style_fil)
             ]
-            # user_ticks_mff = user_ticks_mf[user_ticks_mf['Num Ticks'] >= numtick_fil] # numtick filtering disabled
+            user_ticks_mff = user_ticks_mf[
+                user_ticks_mf["Num Ticks"] >= numtick_fil
+            ]  # numtick filtering disabled
             user_ticks_mff = user_ticks_mf
 
     st.markdown("---")

@@ -82,7 +82,7 @@ with col2:
             value=numrows,
         )
         st.markdown(
-            f"Estimated Scrape Time: {(2+(st.session_state.scrape_cutoff/45)):.0f}min"
+            f"Estimated Scrape Time: {(2+(st.session_state.scrape_cutoff/15)):.0f}min"
         )
     if st.button(
         f"Scrape {st.session_state.list_type}",
