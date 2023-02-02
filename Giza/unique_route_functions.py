@@ -575,6 +575,7 @@ def extract_tick_details(df_source):
             # print(soup.select("#route-stats > div.row.pt-main-content > div > h1")) # Tells you which page is being scraped, useful for debugging
             try:
                 blocks = list(
+                    # could also search for tr tags with text including "·" and take their parents. This would be more tamper-proof
                     soup.select(
                         "#route-stats > div.onx-stats-table > div > div.col-lg-6.col-sm-12.col-xs-12.mt-2.max-height.max-height-md-1000.max-height-xs-400 > div > table > tbody"
                     )[0].find_all("tr")

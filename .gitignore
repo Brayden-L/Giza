@@ -6,3 +6,5 @@
 __pycache__/
 # Ignore geckodriver
 geckodriver.log
+
+scrapetest.py
