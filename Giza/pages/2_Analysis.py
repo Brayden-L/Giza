@@ -293,8 +293,13 @@ if not unique_routes_df.empty:
     r_grade_fil, b_grade_fil = [], []
 
     if (
-        len(df_uniq_fil[df_uniq_fil["Rating"].isin(selected_rgrade_array)].index) >= 2
-    ):  # This checks that there is at least 2 entries of this climb type, otherwise the double slider will error
+        len(
+            pd.unique(
+                df_uniq_fil[df_uniq_fil["Rating"].isin(selected_rgrade_array)]["Rating"]
+            )
+        )
+        >= 2
+    ):  # This checks that there is at least 2 entries of different grades of this climb type, otherwise the double slider will error
         r_grade_min, r_grade_max = r_grade_cont.select_slider(
             label="Route Grade Filter",
             options=grade_filter_align(df_uniq_fil, selected_rgrade_array)[0],
@@ -306,7 +311,14 @@ if not unique_routes_df.empty:
             )
             + 1
         ]
-    if len(df_uniq_fil[df_uniq_fil["Rating"].isin(selected_bgrade_array)].index) >= 2:
+    if (
+        len(
+            pd.unique(
+                df_uniq_fil[df_uniq_fil["Rating"].isin(selected_bgrade_array)]["Rating"]
+            )
+        )
+        >= 2
+    ):
         b_grade_min, b_grade_max = b_grade_cont.select_slider(
             label="Boulder Grade Filter",
             options=grade_filter_align(df_uniq_fil, selected_bgrade_array)[0],
@@ -552,6 +564,7 @@ if not unique_routes_df.empty:
         col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
         pie_chart_margin = dict(t=35, b=35, l=35, r=35)
         pie_width = pie_height = 300
+        loc_pie_extra = 0
         if df_uniq_fil.empty:
             st.error("No Results From Filter")
         else:
@@ -591,6 +604,7 @@ if not unique_routes_df.empty:
             if anlist_type == "ToDos/Areas":  # Switches aggregate type if todo list
                 pie_header_cont.markdown("##### Pitch Count Pie Charts")
                 pie_agg = "Pitches"
+                loc_pie_extra = 400
 
             df_counts_routetype = df_uniq_fil.groupby("Route Type")[pie_agg].sum()
             fig_pie_routetype = px.pie(
@@ -623,13 +637,13 @@ if not unique_routes_df.empty:
 
             df_counts_loc1 = df_uniq_fil.groupby(
                 df_uniq_fil["Location"].apply(lambda x: x.split(">")[0])
-            )[pie_agg].sum()
+            )[pie_agg].sum()[0:30]
             fig_pie_loc1 = px.pie(
                 values=df_counts_loc1.values,
                 names=df_counts_loc1.index,
                 color_discrete_map=baseloc_colordict,
                 title="Base Location",
-                width=pie_width,
+                width=pie_width + loc_pie_extra,
                 height=pie_height,
             )
             fig_pie_loc1.update_layout(margin=pie_chart_margin)
