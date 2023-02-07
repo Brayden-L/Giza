@@ -148,7 +148,7 @@ if anlist_type == "ToDos/Areas":
             )
     if data_source_type == "Select Provided Dataset":
         preldata_path = Path(__file__).parents[1] / "Data_Archive/ToDos/"
-        files = os.listdir(preldata_path)
+        files = sorted(os.listdir(preldata_path))
         preldata_sel = col1.selectbox("Profiles", files)
         try:
             unique_routes_df, import_details, _ = pickle.load(
