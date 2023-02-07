@@ -5,14 +5,11 @@ import streamlit_nested_layout
 from unique_route_functions import download_routelist, data_standardize
 from st_blend_functions import uniqclean_ticktodo, scrape_ticktodo
 from long_strs import scrape_explainer
-from Main_Page import session_state_init
 from datetime import date
 import pickle
 
+
 ### Setup
-session_state_init()
-
-
 def disable_buttons():
     st.session_state.scrape_button_state = True
     st.session_state.exp_button_state = True

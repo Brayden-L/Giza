@@ -15,7 +15,6 @@ from tick_route_functions import (
     tick_report,
 )
 from long_strs import analysis_explainer
-from Main_Page import session_state_init
 
 # Visualization
 import plotly.express as px
@@ -27,8 +26,37 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 import pickle
 
+
 ### Setup
+def session_state_init():  # This must unfortunately be duplicated from the main page due to how streamlit handles page_config
+    if "scrape_button_state" not in st.session_state:
+        st.session_state.scrape_button_state = True
+    if "exp_button_state" not in st.session_state:
+        st.session_state.exp_button_state = True
+    if "df_usend" not in st.session_state:
+        st.session_state.df_usend = pd.DataFrame()
+    if "df_usend_uniq" not in st.session_state:
+        st.session_state.df_usend_uniq = pd.DataFrame()
+    if "df_usend_uniq_ticks" not in st.session_state:
+        st.session_state.df_usend_uniq_ticks = pd.DataFrame()
+    if "df_usend_uniq_todos" not in st.session_state:
+        st.session_state.df_usend_uniq_todos = pd.DataFrame()
+    if "list_type" not in st.session_state:
+        st.session_state.list_type = "Ticks"
+    if "df_ticks_fil" not in st.session_state:
+        st.session_state.df_ticks_fil = pd.DataFrame()
+    if "tick_upload_link_ref" not in st.session_state:
+        st.session_state.tick_upload_link_ref = ""
+    if "todo_upload_link_ref" not in st.session_state:
+        st.session_state.todo_upload_link_ref = ""
+    if "upload_link_ref_str" not in st.session_state:
+        st.session_state.upload_link_ref_str = ""
+    if "df_import" not in st.session_state:
+        st.session_state.df_import = pd.DataFrame()
+
+
 session_state_init()
+
 unique_routes_df = pd.DataFrame()
 
 ### Header
@@ -41,7 +69,7 @@ with st.expander("✋ Help ✋"):
 ### Dataset Selection
 col1, col2, col3 = st.columns([1.5, 0.25, 1.25])
 col1.header("Dataset Selection")
-anlist_type = col1.radio("List Type", options=["Ticks", "ToDos"], horizontal=True)
+anlist_type = col1.radio("List Type", options=["Ticks", "ToDos/Areas"], horizontal=True)
 data_source_type_selections = [
     "Use Session Dataset",
     "Select Provided Dataset",
@@ -98,7 +126,7 @@ if anlist_type == "Ticks":
             except:
                 st.error("File Error", icon="⚠️")
 # Todos dataset selection
-if anlist_type == "ToDos":
+if anlist_type == "ToDos/Areas":
     data_source_type = col1.radio(
         "Data Source Selection",
         data_source_type_selections,
@@ -560,7 +588,7 @@ if not unique_routes_df.empty:
                 fig_pie_leadstyle.update_traces(hole=0.4)
                 col5.plotly_chart(fig_pie_leadstyle)
 
-            if anlist_type == "ToDos":  # Switches aggregate type if todo list
+            if anlist_type == "ToDos/Areas":  # Switches aggregate type if todo list
                 pie_header_cont.markdown("##### Pitch Count Pie Charts")
                 pie_agg = "Pitches"
 
@@ -736,7 +764,7 @@ if not unique_routes_df.empty:
                     fig_hist_bgrade.update_xaxes(type="category")
                     fig_hist_bgrade.update_traces(marker_color="#BAC9B4")
                     pvgcol2.plotly_chart(fig_hist_bgrade)
-            if anlist_type == "ToDos":
+            if anlist_type == "ToDos/Areas":
                 # Pitches V Grade histograms
                 grade_date_part_dict = {
                     "Route Type": "Route Type",

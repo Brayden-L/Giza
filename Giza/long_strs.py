@@ -18,7 +18,7 @@ With that said, there are three ways to access data:
 analysis_explainer = """
 **Note:** If you are unfamiliar with climbing terminology, please refer to this [explainer](https://www.thecrag.com/en/article/ticktypes).
 ##### How-To:
-1. **Select List Type:** Ticks and ToDos provide different analytics as the use case for them is quite different. Tick analyses are typically to gauge performance. To Do analyses are typically to find routes one would like to climb that fit certain parameters.
+1. **Select List Type:** Ticks and ToDos/Areas provide different analytics as the use case for them is quite different. Tick analyses are typically to gauge performance. ToDo/Area analyses are typically to find routes one would like to climb that fit certain parameters.
 2. **Select a Data Source:** If you've scraped a dataset in this session then it will automatically load here. Otherwise, you can select a preloaded dataset. You can also upload a Giza.PKL file if you have one saved.
 3. **Select Grade Homogenization Settings:** This is so direct comparisons can be made among the entire dataset.
 4. **Filter:** Maybe you'd like to only inspect sport climbs. Maybe you'd like to only look at harder climbs. Maybe you only want to see ticks in the last 12 months. All of these can be set via the filter and are applied to the entire analysis. Note: the best way to reset the filter is to go to another page and return to the Analysis Page.
@@ -34,7 +34,7 @@ Giza adds multiple new metrics gathered from tick data. They are:
 - **Lead Ratio** : 0<Float<1. What portion of ticks were lead attempts. When low this is a signifier of a dangerous lead. When high this is typically a signifier that the climb is inconvenient to top rope, typically a steep climb. As a rough rule, low is <0.4, high is >0.9.
 - **Onsight Ratio** : 0<Float<1. What portion of ticks were onsights or flashes. When low this is a signifier that the route is "tricky" or stout for the grade. When high this is a signifier that the climb is "straightforward" or soft for the grade. For routes low is <0.35 and high is >0.90. For boulders low is <0.15 and high is >0.7.
 - **Mean Attempts to Redpoint** : Positive float >=1. This is the mean of how many attempts it took for a successful redpoint from the population of climbers that were not able to onsight/flash the route, but eventually worked to a redpoint. It primarily signifies difficulty to redpoint. Few climbers are meticulous about logging their attempts, so the value of this metric is diminished. As a rough rule, high is >1.80.
-- **Repeat Sender Ratio** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule a value above 1.2 is notable.
+- **Repeat Sender Mean** : Positive float >=1. This is the mean of total clean ascents from the population of climbers that have logged at least one clean ascent. Since many climbers will typically only climb a route/boulder until they obtain a clean ascent, this is an additional popularity metric. It signifies a climb so good that even those who have climbed it clean keep coming back. As a rough rule a value above 1.2 is notable.
 """
 
 about_explainer = """
