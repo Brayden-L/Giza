@@ -831,7 +831,7 @@ if not unique_routes_df.empty:
                     )
                     fig_hist_rgrade.update_xaxes(type="category")
                     pvgcol1.plotly_chart(fig_hist_rgrade)
-                    if bpitchagg.empty:
+                    if not bpitchagg.empty:
                         fig_hist_bgrade = px.histogram(
                             bpitchagg,
                             x=bpitchagg.index,
