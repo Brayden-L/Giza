@@ -4,6 +4,7 @@ from unique_route_functions import (
     route_length_fixer,
     routescrape_syncro,
     extract_default_pitch,
+    extract_num_star_ratings,
     assign_spmp,
     extract_tick_details,
     climb_tick_analysis,
@@ -58,6 +59,7 @@ def scrape_ticktodo(df, type, strip):
     if type == "Ticks":  # if ticks, need to get default pitch numbers
         df = extract_default_pitch(df)
     df = assign_spmp(df)
+    df = extract_num_star_ratings(df)
     df = extract_tick_details(df)
     df = climb_tick_analysis(df)
 

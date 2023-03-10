@@ -442,7 +442,7 @@ def routescrape_syncro(df_source, retries=3):
         res = driver.page_source
         return res
 
-    stqdm.pandas(desc="(1/5) Scraping Mainpages")
+    stqdm.pandas(desc="(1/6) Scraping Mainpages")
     if (
         "Re Mainpage" not in df_source.columns
     ):  # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
@@ -453,7 +453,7 @@ def routescrape_syncro(df_source, retries=3):
         df_source.loc[subset, "Re Mainpage"] = df_source.loc[
             subset, "URL"
         ].progress_apply(page_download_req)
-    stqdm.pandas(desc="(2/5) Scraping Statpages")
+    stqdm.pandas(desc="(2/6) Scraping Statpages")
     if "Re Statpage" not in df_source.columns:
         df_source.insert(len(df_source.columns), "Re Statpage", None)
         df_source["Re Statpage"] = df_source["URL"].progress_apply(
@@ -491,8 +491,37 @@ def extract_default_pitch(df_source):
                 num_pitches = pitch_search.group(0).split(" ")[0]
             return int(num_pitches)
 
-    stqdm.pandas(desc="(3/5) Extracting Default Pitches")
+    stqdm.pandas(desc="(3/6) Extracting Default Pitches")
     df_source["Pitches"] = df_source["Re Mainpage"].progress_apply(get_pitches)
+    return df_source
+
+
+# %%
+def extract_num_star_ratings(df_source):
+    """
+    Analyzes statpage for number of ratings given to the climb. Input is dataframe, output is updated dataframe. num_star_ratings is int.
+    """
+
+    def get_num_star_ratings(res):
+        if res is None:
+            return None
+        else:
+            soup = BeautifulSoup(res, "lxml")
+            num_star_ratings_html = soup.select_one(
+                "#route-stats > div.onx-stats-table > div > div:nth-child(1) > div > h3 > span"
+            )
+            if num_star_ratings_html is None:
+                num_star_ratings = 0
+            else:
+                num_star_ratings = int(num_star_ratings_html.text.replace(",", ""))
+            if num_star_ratings == -1:
+                num_star_rating = 0
+        return num_star_ratings
+
+    stqdm.pandas(desc="(4/6) Extracting Star Ratings")
+    df_source["Num Star Ratings"] = df_source["Re Statpage"].progress_apply(
+        get_num_star_ratings
+    )
     return df_source
 
 
@@ -707,7 +736,7 @@ def extract_tick_details(df_source):
             d["Lead Style"] = pd.Categorical(d["Lead Style"])
         return d
 
-    stqdm.pandas(desc="(4/5) Constructing Tick Dataframe")
+    stqdm.pandas(desc="(5/6) Constructing Tick Dataframe")
     df_source["Route Ticks"] = df_source["Re Statpage"].progress_apply(get_tick_details)
     return df_source
 
@@ -937,7 +966,7 @@ def climb_tick_analysis(df_source):
         same df with added columns
     """
     # Analyzes tick sub dataframe to create meaningful metrics.
-    stqdm.pandas(desc="(5/5) Constructing Tick Analytics")
+    stqdm.pandas(desc="(6/6) Constructing Tick Analytics")
     df_source[
         [
             "Num Ticks",

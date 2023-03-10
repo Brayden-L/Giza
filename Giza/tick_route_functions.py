@@ -46,6 +46,7 @@ def tick_merge(df_ticks, df_uniq):
         "Lead Ratio",
         "Num Ticks",
         "Num Tickers",
+        "Num Star Ratings",
         "OS Ratio",
         "Mean Attempts To RP",
         "Repeat Sender Ratio",
