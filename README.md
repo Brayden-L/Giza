@@ -49,6 +49,7 @@ Libraries:
 * [Pandas](https://github.com/pandas-dev/pandas) and [Numpy](https://github.com/numpy/numpy) - Basic data analysis libraries
 * [Plotly](https://github.com/plotly) - Plotting and visualization
 * [Requests](https://github.com/psf/requests) - HTTP requests
+* [Selenium](https://pypi.org/project/selenium/) - HTTP requests for pages w/ javascript
 * [BeautifulSoup](https://github.com/wention/BeautifulSoup4) - HTML parsing
 * [Streamlit](https://github.com/streamlit) - Web app framework
 
