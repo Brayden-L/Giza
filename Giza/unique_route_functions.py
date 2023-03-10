@@ -178,6 +178,9 @@ def data_standardize(df_source):
     # Your Stars NaN type is -1 for some reason, change it to an actual nonetype
     df_source.loc[df_source["Your Stars"] == -1, "Your Stars"] = None
 
+    # Avg stars NaN type is also -1 for some reason, change it to actual nonetype
+    df_source.loc[df_source["Avg Stars"] == -1, "Avg Stars"] = None
+
     # Base Location is a useful column for filtering as it is the only location tier that is guaranteed to be consistent across zones.
     if "Base Location" not in df_source.columns:
         df_source.insert(len(df_source.columns), "Base Location", "")
@@ -511,12 +514,12 @@ def extract_num_star_ratings(df_source):
                 "#route-stats > div.onx-stats-table > div > div:nth-child(1) > div > h3 > span"
             )
             if num_star_ratings_html is None:
-                num_star_ratings = 0
-            else:
-                num_star_ratings = int(num_star_ratings_html.text.replace(",", ""))
-            if num_star_ratings == -1:
                 num_star_rating = 0
-        return num_star_ratings
+            else:
+                num_star_rating = int(num_star_ratings_html.text.replace(",", ""))
+            if num_star_rating == -1:
+                num_star_rating = 0
+        return num_star_rating
 
     stqdm.pandas(desc="(4/6) Extracting Star Ratings")
     df_source["Num Star Ratings"] = df_source["Re Statpage"].progress_apply(

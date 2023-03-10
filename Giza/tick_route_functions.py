@@ -40,6 +40,9 @@ def tick_merge(df_ticks, df_uniq):
         df_ticks.drop(columns=["Rating"], inplace=True)
     if "Length" in df_ticks.columns:
         df_ticks.drop(columns=["Length"], inplace=True)
+    df_uniq_cols = (
+        df_uniq.columns.tolist()
+    )  # So I don't have to re-scrape every time I add a metric, this uses whatever metrics happen to be in the scraped dataframe
     df_uniq_colkeep = [
         "Route ID",
         "Pitches",
@@ -54,7 +57,10 @@ def tick_merge(df_ticks, df_uniq):
         "Length",
         "SP/MP",
     ]
-    df_out = df_ticks.merge(df_uniq[df_uniq_colkeep], how="left", on="Route ID")
+    orgcol_uniq_in_df_uniq = [
+        entry for entry in df_uniq_colkeep if entry in df_uniq_cols
+    ]
+    df_out = df_ticks.merge(df_uniq[orgcol_uniq_in_df_uniq], how="left", on="Route ID")
     return df_out
 
 

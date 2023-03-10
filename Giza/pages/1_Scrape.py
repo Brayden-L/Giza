@@ -181,3 +181,4 @@ st.download_button(
     disabled=st.session_state.exp_button_state,
     help="CSV files are nice if you want to poke around the data yourself in excel or another program",
 )
+st.session_state.df_usend_uniq
