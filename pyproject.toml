@@ -29,6 +29,7 @@ scipy = "^1.10.0"
 selenium-wire = "^5.1.0"
 selenium = "^4.8.0"
 webdriver-manager = "^3.8.5"
+category-encoders = "^2.6.0"
 
 
 [tool.poetry.group.dev.dependencies]

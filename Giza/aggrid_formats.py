@@ -32,6 +32,7 @@ def aggrid_uniq_format(df_source):
     orgcol_uniq_in_df_source = [
         entry for entry in fulldat_orgcol_uniq if entry in df_source_cols
     ]
+    orgcol_uniq_in_df_source = ["Route Link"] + orgcol_uniq_in_df_source
     fulldat_floatcol_uniq = [
         "Lead Ratio",
         "OS Ratio",
@@ -45,6 +46,8 @@ def aggrid_uniq_format(df_source):
         lambda row: f"""<a target="_blank" href="{row['URL']}">{row['Route']}</a>""",
         axis=1,
     )
+    orgcol_uniq_in_df_source.remove("Route")
+    # df_source["Route Link"] = df_source.apply(lambda row: row["URL"])
     gb = GridOptionsBuilder.from_dataframe(df_source[orgcol_uniq_in_df_source])
     gb.configure_side_bar()
     gb.configure_default_column(wrapHeaderText=True, autoHeaderHeight=True)
