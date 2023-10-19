@@ -17,7 +17,6 @@ import re
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
-from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.common.by import By
 
 # General
@@ -412,7 +411,8 @@ def routescrape_syncro(df_source, retries=3):
     # selenium setup
     firefoxOptions = Options()
     firefoxOptions.add_argument("--headless")
-    service = Service(GeckoDriverManager().install())
+    # service = Service(GeckoDriverManager().install())
+    service = Service()
     driver = webdriver.Firefox(
         options=firefoxOptions,
         service=service,
