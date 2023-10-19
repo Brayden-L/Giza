@@ -435,14 +435,19 @@ def routescrape_syncro(df_source, retries=3):
         return res
 
     def page_download_sel(url):
-        driver.get(url)
-        while True:
-            try:
-                butt = driver.find_element(By.XPATH, butt_xpath)
-                butt.click()
-            except:
-                break
-        res = driver.page_source
+        try:
+            driver.get(url)
+            while True:
+                try:
+                    butt = driver.find_element(By.XPATH, butt_xpath)
+                    butt.click()
+                except:
+                    break
+            res = driver.page_source
+        except Exception as e:
+            print(url)
+            print(e)
+            res = None
         return res
 
     stqdm.pandas(desc="(1/6) Scraping Mainpages")
