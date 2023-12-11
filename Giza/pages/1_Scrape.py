@@ -59,6 +59,8 @@ with col1:
                 )  # func
             if error_message:
                 st.error(error_message)
+            if st.session_state.df_usend.empty:
+                st.error("Tick list is likely private. Make public to continue.")
             else:
                 st.session_state.df_usend = data_standardize(st.session_state.df_usend)
                 st.session_state.df_usend_uniq = uniqclean_ticktodo(
