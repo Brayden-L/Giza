@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
 import streamlit as st
+import time
 
 # Scraping Related
 import requests
@@ -18,6 +19,9 @@ from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.firefox import GeckoDriverManager
 
 # General
 import datetime as dt
@@ -411,14 +415,15 @@ def routescrape_syncro(df_source, retries=3):
     # selenium setup
     firefoxOptions = Options()
     firefoxOptions.add_argument("--headless")
-    # service = Service(GeckoDriverManager().install())
-    service = Service()
+    service = Service(GeckoDriverManager().install())
     driver = webdriver.Firefox(
         options=firefoxOptions,
         service=service,
     )
     driver.implicitly_wait(2)
     butt_xpath = """//*[@id="route-stats"]/div[3]/div/div[4]/div/div/button"""
+    login_xpath = """/html/body/div[1]/div/div/div[1]/button"""
+    
 
     def insert_str_to_address(url, insert_phrase):
         str_list = url.split("/")
@@ -438,10 +443,16 @@ def routescrape_syncro(df_source, retries=3):
         try:
             driver.get(url)
             while True:
+                # if there is a login popup, then exit it.
+                login_x = driver.find_element(By.XPATH, login_xpath)
+                if login_x:
+                    driver.execute_script("arguments[0].click();", login_x)
+                    print('woop')
+                # click the "load more" button as many times as you can
                 try:
                     butt = driver.find_element(By.XPATH, butt_xpath)
-                    butt.click()
-                except:
+                    driver.execute_script("arguments[0].click();", butt)
+                except Exception as e:
                     break
             res = driver.page_source
         except Exception as e:
