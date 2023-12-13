@@ -2,6 +2,7 @@
 
 # %%
 # Data Science Related
+import os
 import numpy as np
 import pandas as pd
 from pandas.api.types import CategoricalDtype
@@ -412,6 +413,14 @@ def routescrape_syncro(df_source, retries=3):
     )
     s.mount("http://", HTTPAdapter(max_retries=retries))
 
+    # Github Token Import
+
+    if "GITHUB_TOKEN" in st.secrets:
+        # Access the GitHub token using Streamlit secrets
+        github_token = st.secrets["GITHUB_TOKEN"]
+        # Set the GitHub token as an environment variable
+        os.environ["GITHUB_TOKEN"] = github_token
+
     # selenium setup
     firefoxOptions = Options()
     firefoxOptions.add_argument("--headless")
@@ -424,7 +433,6 @@ def routescrape_syncro(df_source, retries=3):
     driver.implicitly_wait(2)
     butt_xpath = """//*[@id="route-stats"]/div[3]/div/div[4]/div/div/button"""
     login_xpath = """/html/body/div[1]/div/div/div[1]/button"""
-    
 
     def insert_str_to_address(url, insert_phrase):
         str_list = url.split("/")
@@ -448,7 +456,7 @@ def routescrape_syncro(df_source, retries=3):
                 login_x = driver.find_element(By.XPATH, login_xpath)
                 if login_x:
                     driver.execute_script("arguments[0].click();", login_x)
-                    print('woop')
+                    print("woop")
                 # click the "load more" button as many times as you can
                 try:
                     butt = driver.find_element(By.XPATH, butt_xpath)
