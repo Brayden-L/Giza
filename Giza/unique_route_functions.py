@@ -414,10 +414,8 @@ def routescrape_syncro(df_source, retries=3):
     s.mount("http://", HTTPAdapter(max_retries=retries))
 
     # Github Token Import
-
-    if "GITHUB_TOKEN" in st.secrets:
-        # Set the GitHub token as an environment variable
-        os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
+    # Set the GitHub token as an environment variable
+    os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
 
     # selenium setup
     firefoxOptions = Options()
