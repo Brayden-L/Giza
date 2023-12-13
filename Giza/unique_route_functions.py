@@ -420,8 +420,9 @@ def routescrape_syncro(df_source, retries=3):
     # selenium setup
     firefoxOptions = Options()
     firefoxOptions.add_argument("--headless")
-    # service = Service(GeckoDriverManager().install())
-    service = Service()
+    firefoxOptions.add_argument("--disable-gpu")
+    service = Service(GeckoDriverManager().install())
+    # service = Service()
     driver = webdriver.Firefox(
         options=firefoxOptions,
         service=service,
