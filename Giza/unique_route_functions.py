@@ -416,10 +416,8 @@ def routescrape_syncro(df_source, retries=3):
     # Github Token Import
 
     if "GITHUB_TOKEN" in st.secrets:
-        # Access the GitHub token using Streamlit secrets
-        github_token = st.secrets["GITHUB_TOKEN"]
         # Set the GitHub token as an environment variable
-        os.environ["GITHUB_TOKEN"] = github_token
+        os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
 
     # selenium setup
     firefoxOptions = Options()
