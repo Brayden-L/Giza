@@ -17,12 +17,15 @@ import lxml
 import cchardet
 import re
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.firefox import GeckoDriverManager
+# from selenium.webdriver.firefox.options import Options
+# from selenium.webdriver.firefox.service import Service
+# from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # General
 import datetime as dt
@@ -418,13 +421,14 @@ def routescrape_syncro(df_source, retries=3):
     os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
 
     # selenium setup
-    firefoxOptions = Options()
-    firefoxOptions.add_argument("--headless")
-    firefoxOptions.add_argument("--disable-gpu")
-    service = Service(GeckoDriverManager().install())
+    options = Options()
+    options.add_argument("--headless")
+    # options.add_argument("--disable-gpu")
+    # service = Service(GeckoDriverManager().install())
+    service = Service(ChromeDriverManager().install())
     # service = Service()
     driver = webdriver.Firefox(
-        options=firefoxOptions,
+        options=options,
         service=service,
     )
     driver.implicitly_wait(2)
