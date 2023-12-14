@@ -418,7 +418,7 @@ def routescrape_syncro(df_source, retries=3):
 
     # Github Token Import
     # Set the GitHub token as an environment variable
-    os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
+    # os.environ["GH_TOKEN"] = st.secrets["GITHUB_TOKEN"]
 
     # selenium setup
     options = Options()
@@ -432,6 +432,8 @@ def routescrape_syncro(df_source, retries=3):
         service=service,
     )
     driver.implicitly_wait(2)
+    print("Driver Setup Complete")
+    
     butt_xpath = """//*[@id="route-stats"]/div[3]/div/div[4]/div/div/button"""
     login_xpath = """/html/body/div[1]/div/div/div[1]/button"""
 
@@ -443,6 +445,7 @@ def routescrape_syncro(df_source, retries=3):
     def page_download_req(url):
         try:
             res = s.get(url).text
+            print('woop')
         except Exception as e:
             print(url)
             print(e)
@@ -452,12 +455,12 @@ def routescrape_syncro(df_source, retries=3):
     def page_download_sel(url):
         try:
             driver.get(url)
+            print('woop')
             while True:
                 # if there is a login popup, then exit it.
                 login_x = driver.find_element(By.XPATH, login_xpath)
                 if login_x:
                     driver.execute_script("arguments[0].click();", login_x)
-                    print("woop")
                 # click the "load more" button as many times as you can
                 try:
                     butt = driver.find_element(By.XPATH, butt_xpath)
@@ -476,23 +479,23 @@ def routescrape_syncro(df_source, retries=3):
         "Re Mainpage" not in df_source.columns
     ):  # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
         df_source.insert(len(df_source.columns), "Re Mainpage", None)
-        df_source["Re Mainpage"] = df_source["URL"].progress_apply(page_download_req)
+        df_source["Re Mainpage"] = df_source["URL"].apply(page_download_req)
     else:
         subset = df_source["Re Mainpage"].isna()
         df_source.loc[subset, "Re Mainpage"] = df_source.loc[
             subset, "URL"
-        ].progress_apply(page_download_req)
+        ].apply(page_download_req)
     stqdm.pandas(desc="(2/6) Scraping Statpages")
     if "Re Statpage" not in df_source.columns:
         df_source.insert(len(df_source.columns), "Re Statpage", None)
-        df_source["Re Statpage"] = df_source["URL"].progress_apply(
+        df_source["Re Statpage"] = df_source["URL"].apply(
             lambda x: page_download_sel(insert_str_to_address(x, "stats"))
         )
     else:
         subset = df_source["Re Statpage"].isna()
         df_source.loc[subset, "Re Statpage"] = df_source.loc[
             subset, "URL"
-        ].progress_apply(page_download_sel)
+        ].apply(page_download_sel)
     driver.quit()
     return df_source
 
@@ -521,7 +524,7 @@ def extract_default_pitch(df_source):
             return int(num_pitches)
 
     stqdm.pandas(desc="(3/6) Extracting Default Pitches")
-    df_source["Pitches"] = df_source["Re Mainpage"].progress_apply(get_pitches)
+    df_source["Pitches"] = df_source["Re Mainpage"].apply(get_pitches)
     return df_source
 
 
@@ -548,7 +551,7 @@ def extract_num_star_ratings(df_source):
         return num_star_rating
 
     stqdm.pandas(desc="(4/6) Extracting Star Ratings")
-    df_source["Num Star Ratings"] = df_source["Re Statpage"].progress_apply(
+    df_source["Num Star Ratings"] = df_source["Re Statpage"].apply(
         get_num_star_ratings
     )
     return df_source
@@ -766,7 +769,7 @@ def extract_tick_details(df_source):
         return d
 
     stqdm.pandas(desc="(5/6) Constructing Tick Dataframe")
-    df_source["Route Ticks"] = df_source["Re Statpage"].progress_apply(get_tick_details)
+    df_source["Route Ticks"] = df_source["Re Statpage"].apply(get_tick_details)
     return df_source
 
 
@@ -1006,7 +1009,7 @@ def climb_tick_analysis(df_source):
             "Mean Attempts To RP",
             "Tick Counts",
         ]
-    ] = df_source.progress_apply(
+    ] = df_source.apply(
         lambda x: analyze_tick_counts(x["Route Ticks"], x["Pitches"]), axis=1
     )
     return df_source
