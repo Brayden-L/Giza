@@ -89,50 +89,49 @@ with col2:
         f"Scrape {st.session_state.list_type}",
         disabled=st.session_state.scrape_button_state,
     ):
-        with st.spinner("Scraping"):
-            st.session_state.exp_button_state = False
-            st.session_state.df_usend_uniq.drop(
-                st.session_state.df_usend_uniq.iloc[
-                    st.session_state.scrape_cutoff :
-                ].index,
-                inplace=True,
-            )  # Apply filtering
-            st.session_state.df_usend = st.session_state.df_usend[
-                st.session_state.df_usend["Route"].isin(
-                    st.session_state.df_usend_uniq["Route"]
+        st.session_state.exp_button_state = False
+        st.session_state.df_usend_uniq.drop(
+            st.session_state.df_usend_uniq.iloc[
+                st.session_state.scrape_cutoff :
+            ].index,
+            inplace=True,
+        )  # Apply filtering
+        st.session_state.df_usend = st.session_state.df_usend[
+            st.session_state.df_usend["Route"].isin(
+                st.session_state.df_usend_uniq["Route"]
+            )
+        ]  # This applies the filter to df_usend too so it matches the filtering done to the unique list
+        st.session_state.df_usend_uniq, scrape_stats = scrape_ticktodo(
+            st.session_state.df_usend_uniq,
+            type=st.session_state.list_type,
+            strip=False,
+        )  # func
+        with col3:
+            if scrape_stats["nfail_mainscr"] + scrape_stats["nfail_statscr"] == 0:
+                st.session_state.scrape_button_state = True
+                col2.success(
+                    f"Scrape 100% Successful | Continue To Analysis", icon="✅"
                 )
-            ]  # This applies the filter to df_usend too so it matches the filtering done to the unique list
-            st.session_state.df_usend_uniq, scrape_stats = scrape_ticktodo(
-                st.session_state.df_usend_uniq,
-                type=st.session_state.list_type,
-                strip=False,
-            )  # func
-            with col3:
-                if scrape_stats["nfail_mainscr"] + scrape_stats["nfail_statscr"] == 0:
-                    st.session_state.scrape_button_state = True
-                    col2.success(
-                        f"Scrape 100% Successful | Continue To Analysis", icon="✅"
+            else:
+                st.session_state.scrape_button_state = True
+                col2.warning(
+                    f"Scrape Completed With Missing Values ({scrape_stats['scrape_failrate']:.2f}% Success Rate | You May Continue To Analysis)",
+                    icon="⚠️",
+                )
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    st.warning(
+                        f"{scrape_stats['nfail_mainscr']} failed mainpage scrapes"
                     )
-                else:
-                    st.session_state.scrape_button_state = True
-                    col2.warning(
-                        f"Scrape Completed With Missing Values ({scrape_stats['scrape_failrate']:.2f}% Success Rate | You May Continue To Analysis)",
-                        icon="⚠️",
+                    scrape_stats["failed_mainscrape_list"]
+                with col2:
+                    st.warning(
+                        f"{scrape_stats['nfail_statscr']} failed statpage scrapes"
                     )
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        st.warning(
-                            f"{scrape_stats['nfail_mainscr']} failed mainpage scrapes"
-                        )
-                        scrape_stats["failed_mainscrape_list"]
-                    with col2:
-                        st.warning(
-                            f"{scrape_stats['nfail_statscr']} failed statpage scrapes"
-                        )
-                        scrape_stats["failed_statscrape_list"]
-                    st.info(
-                        "To retry, redownload the data then scrape again.", icon="ℹ️"
-                    )
+                    scrape_stats["failed_statscrape_list"]
+                st.info(
+                    "To retry, redownload the data then scrape again.", icon="ℹ️"
+                )
 
 ### Session state handling
 # This is the end of the line for our data extraction, creating a seperate session state df for each will allow a user to scrape both and use both in the same session. We must package it for session state and file export.

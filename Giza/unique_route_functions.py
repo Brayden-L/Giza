@@ -479,23 +479,23 @@ def routescrape_syncro(df_source, retries=3):
         "Re Mainpage" not in df_source.columns
     ):  # Creates column if it does not yet exist, otherwise it will try to download any that errored last attempt
         df_source.insert(len(df_source.columns), "Re Mainpage", None)
-        df_source["Re Mainpage"] = df_source["URL"].apply(page_download_req)
+        df_source["Re Mainpage"] = df_source["URL"].progress_apply(page_download_req)
     else:
         subset = df_source["Re Mainpage"].isna()
         df_source.loc[subset, "Re Mainpage"] = df_source.loc[
             subset, "URL"
-        ].apply(page_download_req)
+        ].progress_apply(page_download_req)
     stqdm.pandas(desc="(2/6) Scraping Statpages")
     if "Re Statpage" not in df_source.columns:
         df_source.insert(len(df_source.columns), "Re Statpage", None)
-        df_source["Re Statpage"] = df_source["URL"].apply(
+        df_source["Re Statpage"] = df_source["URL"].progress_apply(
             lambda x: page_download_sel(insert_str_to_address(x, "stats"))
         )
     else:
         subset = df_source["Re Statpage"].isna()
         df_source.loc[subset, "Re Statpage"] = df_source.loc[
             subset, "URL"
-        ].apply(page_download_sel)
+        ].progress_apply(page_download_sel)
     driver.quit()
     return df_source
 
@@ -524,7 +524,7 @@ def extract_default_pitch(df_source):
             return int(num_pitches)
 
     stqdm.pandas(desc="(3/6) Extracting Default Pitches")
-    df_source["Pitches"] = df_source["Re Mainpage"].apply(get_pitches)
+    df_source["Pitches"] = df_source["Re Mainpage"].progress_apply(get_pitches)
     return df_source
 
 
@@ -551,7 +551,7 @@ def extract_num_star_ratings(df_source):
         return num_star_rating
 
     stqdm.pandas(desc="(4/6) Extracting Star Ratings")
-    df_source["Num Star Ratings"] = df_source["Re Statpage"].apply(
+    df_source["Num Star Ratings"] = df_source["Re Statpage"].progress_apply(
         get_num_star_ratings
     )
     return df_source
@@ -769,7 +769,7 @@ def extract_tick_details(df_source):
         return d
 
     stqdm.pandas(desc="(5/6) Constructing Tick Dataframe")
-    df_source["Route Ticks"] = df_source["Re Statpage"].apply(get_tick_details)
+    df_source["Route Ticks"] = df_source["Re Statpage"].progress_apply(get_tick_details)
     return df_source
 
 
@@ -1009,7 +1009,7 @@ def climb_tick_analysis(df_source):
             "Mean Attempts To RP",
             "Tick Counts",
         ]
-    ] = df_source.apply(
+    ] = df_source.progress_apply(
         lambda x: analyze_tick_counts(x["Route Ticks"], x["Pitches"]), axis=1
     )
     return df_source
